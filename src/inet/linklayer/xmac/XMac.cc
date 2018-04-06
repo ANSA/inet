@@ -249,6 +249,8 @@ void XMac::handleSelfMessage(cMessage *msg)
             changeDisplayColor(BLACK);
             radio->setRadioMode(IRadio::RADIO_MODE_SLEEP);
             macState = SLEEP;
+            if(bubbles)
+            getParentModule()->getParentModule()-> bubble("Going to sleep");
             scheduleAt(simTime()+dblrand()*slotDuration, wakeup);
             return;
         }
@@ -263,6 +265,8 @@ void XMac::handleSelfMessage(cMessage *msg)
             radio->setRadioMode(IRadio::RADIO_MODE_RECEIVER);
             changeDisplayColor(GREEN);
             macState = CCA;
+            if(bubbles)
+            getParentModule()->getParentModule()-> bubble("Waking upp");
             return;
         }
         // we receive an ACK back but it is too late
@@ -294,6 +298,8 @@ void XMac::handleSelfMessage(cMessage *msg)
             {
                 scheduleAt(simTime() + slotDuration, wakeup);
                 macState = SLEEP;
+                if(bubbles)
+            getParentModule()->getParentModule()-> bubble("Going to sleep");
                 radio->setRadioMode(IRadio::RADIO_MODE_SLEEP);
                 changeDisplayColor(BLACK);
                 return;
@@ -321,6 +327,8 @@ void XMac::handleSelfMessage(cMessage *msg)
                 cancelEvent(cca_timeout);
                 scheduleAt(simTime() + slotDuration, wakeup);
                 macState = SLEEP;
+                if(bubbles)
+            getParentModule()->getParentModule()-> bubble("Going to sleep");
                 radio->setRadioMode(IRadio::RADIO_MODE_SLEEP);
                 changeDisplayColor(BLACK);
             }
@@ -447,6 +455,8 @@ void XMac::handleSelfMessage(cMessage *msg)
             else
                 scheduleAt(simTime() + slotDuration, wakeup);
             macState = SLEEP;
+            if(bubbles)
+            getParentModule()->getParentModule()-> bubble("Going to sleep");
             radio->setRadioMode(IRadio::RADIO_MODE_SLEEP);
             changeDisplayColor(BLACK);
             return;
@@ -484,6 +494,8 @@ void XMac::handleSelfMessage(cMessage *msg)
                 else
                     scheduleAt(simTime() + slotDuration, wakeup);
                 macState = SLEEP;
+                if(bubbles)
+            getParentModule()->getParentModule()-> bubble("Going to sleep");
                 radio->setRadioMode(IRadio::RADIO_MODE_SLEEP);
                 changeDisplayColor(BLACK);
 
@@ -506,6 +518,9 @@ void XMac::handleSelfMessage(cMessage *msg)
             else
                 scheduleAt(simTime() + slotDuration, wakeup);
             macState = SLEEP;
+            if(bubbles)
+            if(bubbles)
+            getParentModule()->getParentModule()-> bubble("Going to sleep");
             radio->setRadioMode(IRadio::RADIO_MODE_SLEEP);
             changeDisplayColor(BLACK);
             return;
