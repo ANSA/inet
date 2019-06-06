@@ -342,6 +342,19 @@ class INET_API MemoryOutputStream {
             mul >>= 1;
         }
     }
+
+    /**
+     * Writes a string with the maximum length of n bytes to the end of the stream
+     * without '\0'.
+     */
+    void writeStringOfMaxNBytes(const char* str, int n){
+        if(n <= 0) throw cRuntimeError("Can not write 0 or less bytes.");
+        if(str == nullptr) throw cRuntimeError("No string given.");
+        if(n < sizeof(str) / sizeof(str[0])) hrow cRuntimeError("String is longer than maximum length.");
+        for(int i = 0; i < n || str[i] == '\0'; ++i){
+            writeByte(str[i]);
+        }
+    }
     //@}
 };
 
