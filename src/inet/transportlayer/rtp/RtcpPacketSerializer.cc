@@ -17,7 +17,7 @@
 #include "inet/transportlayer/rtp/RtcpPacket_m.h"
 #include "inet/transportlayer/rtp/RtcpPacketSerializer.h"
 
-// TODO: I got lost with all the castings, not sure if it is correct
+// FIXME: I got lost with all the castings, not sure if it is correct
 
 namespace inet::rtp {
 
@@ -79,7 +79,7 @@ void RtcpPacketSerializer::serialize(MemoryOutputStream& stream, const Ptr<const
         }
         case RTCP_PT_SDES: {
             const auto& rtcpSdesPacket = staticPtrCast<const RtcpSdesPacket>(chunk);
-            int num_chunks = rtcpPacket->getCount();
+            int num_chunks = rtcpSdesPacket->getCount();
             for(int i = 0; i < num_chunks; ++i){
                 const SdesChunk* sdesChunk = static_cast<const SdesChunk*>(&rtcpSdesPacket->getSdesChunks());
                 stream.writeUint32Be(sdesChunk->getSsrc());
@@ -120,6 +120,10 @@ void RtcpPacketSerializer::serialize(MemoryOutputStream& stream, const Ptr<const
             stream.writeByteRepeatedly(0, 3);
             break;
         }
+        default: {
+            throw cRuntimeError("Can not serialize RTCP packet: type %d not supported.", rtcpPacket->getPacketType());
+            break;
+        }
     }
 
 }
@@ -127,6 +131,80 @@ void RtcpPacketSerializer::serialize(MemoryOutputStream& stream, const Ptr<const
 const Ptr<Chunk> RtcpPacketSerializer::deserialize(MemoryInputStream& stream) const
 {
     auto rtcpPacket = makeShared<RtcpPacket>();
+    rtcpPacket->setVersion(stream.readNBitsToUint64Be(2));
+    rtcpPacket->setPadding(stream.readBit());
+    rtcpPacket->setCount(stream.readNBitsToUint64Be(5));
+    rtcpPacket->setPacketType((RtcpPacketType)stream.readByte());
+    rtcpPacket->setRtcpLength(stream.readUint32Be());
+    switch(rtcpPacket->getPacketType()){
+        case RTCP_PT_SR: {
+            auto rtcpSenderReportPacket = makeShared<RtcpSenderReportPacket>();
+            rtcpSenderReportPacket->setSsrc(stream.readUint32Be());
+            rtcpSenderReportPacket->getSenderReportForUpdate().setNTPTimeStamp(stream.readUint64Be());
+            rtcpSenderReportPacket->getSenderReportForUpdate().setRTPTimeStamp(stream.readUint32Be());
+            rtcpSenderReportPacket->getSenderReportForUpdate().setPacketCount(stream.readUint32Be());
+            rtcpSenderReportPacket->getSenderReportForUpdate().setByteCount(stream.readUint32Be());
+            int size = rtcpSenderReportPacket->getCount();
+            for(int i = 0; i < size; ++i){
+                ReceptionReport receptionReport;
+                receptionReport.setSsrc(stream.readUint32Be());
+                receptionReport.setFractionLost(stream.readByte());
+                receptionReport.setPacketsLostCumulative(stream.readNBitsToUint64Be(24));
+                receptionReport.setSequenceNumber(stream.readUint32Be());
+                receptionReport.setJitter(stream.readUint32Be());
+                receptionReport.setLastSR(stream.readUint32Be());
+                receptionReport.setDelaySinceLastSR(stream.readUint32Be());
+                rtcpSenderReportPacket->addReceptionReport(&receptionReport);
+            }
+            break;
+        }
+        case RTCP_PT_RR: {
+            auto rtcpReceiverReportPacket = makeShared<RtcpReceiverReportPacket>();
+            rtcpReceiverReportPacket->setSsrc(stream.readUint32Be());
+            int size = rtcpReceiverReportPacket->getCount();
+            for(int i = 0; i < size; ++i){
+                ReceptionReport receptionReport;
+                receptionReport.setSsrc(stream.readUint32Be());
+                receptionReport.setFractionLost(stream.readByte());
+                receptionReport.setPacketsLostCumulative(stream.readNBitsToUint64Be(24));
+                receptionReport.setSequenceNumber(stream.readUint32Be());
+                receptionReport.setJitter(stream.readUint32Be());
+                receptionReport.setLastSR(stream.readUint32Be());
+                receptionReport.setDelaySinceLastSR(stream.readUint32Be());
+                rtcpReceiverReportPacket->addReceptionReport(&receptionReport);
+            }
+            break;
+        }
+        case RTCP_PT_SDES: {
+            auto rtcpSdesPacket = makeShared<RtcpSdesPacket>();
+            int num_chunks = rtcpSdesPacket->getCount();
+            for(int i = 0; i < num_chunks; ++i){
+                SdesChunk sdesChunk;
+                sdesChunk.setSsrc(stream.readUint32Be());
+                uint8_t itemType = stream.readByte();
+                while(itemType != 0){
+                    // reading out the length field, it is set by the constructor
+                    uint8_t length = stream.readByte();
+                    SdesItem sdesItem = SdesItem((SdesItem::SdesItemType)itemType, stream.readStringOfNBytes(length));
+                    sdesChunk.addSDESItem(&sdesItem);
+                    itemType = stream.readByte();
+                }
+                stream.readByteRepeatedly(0, (sdesChunk.getLength() + 1) % 4);
+                rtcpSdesPacket->addSDESChunk(&sdesChunk);
+            }
+            break;
+        }
+        case RTCP_PT_BYE: {
+            auto rtcpByePacket = makeShared<RtcpByePacket>();
+            rtcpByePacket->setSsrc(stream.readUint32Be());
+            stream.readUint32Be();
+            break;
+        }
+        default: {
+            throw cRuntimeError("Can not deserialize RTCP packet: type %d not supported.", rtcpPacket->getPacketType());
+            break;
+        }
+    }
 }
 
 } // namespace inet::rtp
