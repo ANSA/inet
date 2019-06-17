@@ -40,6 +40,7 @@ const Ptr<Chunk> SimpleVoipPacketSerializer::deserialize(MemoryInputStream& stre
 	simpleVoipPacket->setPacketID(stream.readUint32Be());
 	simpleVoipPacket->setVoipTimestamp(SimTime().setRaw(stream.readUint64Be()));
 	simpleVoipPacket->setVoiceDuration(SimTime().setRaw(stream.readUint64Be()));
+	simpleVoipPacket->setChunkLength(B(28));
 	return simpleVoipPacket;
 }
 

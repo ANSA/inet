@@ -154,7 +154,8 @@ void SimpleVoipSender::sendVoIPPacket()
     voice->setPacketID(packetID);
     voice->setVoipTimestamp(simTime() - packetizationInterval);    // start time of voice in this packet
     voice->setVoiceDuration(packetizationInterval);
-    voice->setChunkLength(B(talkPacketSize));
+    //voice->setChunkLength(B(talkPacketSize));
+    voice->setChunkLength(B(28));
     packet->insertAtBack(voice);
 
     EV_INFO << "TALKSPURT " << talkspurtID - 1 << " sending packet " << packetID << "\n";
