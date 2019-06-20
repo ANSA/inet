@@ -69,7 +69,17 @@ void Ieee80211MacHeaderSerializer::serialize(MemoryOutputStream& stream, const P
     else if (auto dataOrMgmtFrame = dynamicPtrCast<const Ieee80211DataOrMgmtHeader>(chunk))
     {
         uint8_t type = dataOrMgmtFrame->getType();
-        stream.writeByte(((type & 0x0F) << 4) | ((type & 0x30) >> 2));  //without Qos=0x08, with Qos=0x88
+        uint8_t type_to_write = ((type & 1) == 1 ? 16 : 0) |
+        ((type & 2) == 2 ? 32 : 0) |
+        ((type & 4) == 4 ? 64 : 0) |
+        ((type & 8) == 8 ? 128 : 0) |
+        ((type & 16) == 16 ? 4 : 0) |
+        ((type & 32) == 32 ? 8 : 0) |
+        ((type & 64) == 64 ? 1 : 0) |
+        ((type & 128) == 128 ? 2 : 0);
+
+        stream.writeByte(type_to_write);
+        //stream.writeByte(((type & 0x0F) << 4) | ((type & 0x30) >> 2));  //without Qos=0x08, with Qos=0x88
         uint8_t fc1;
         // TODO: Order, Protected Frame, MoreData, Power Mgt
         fc1 = (dataOrMgmtFrame->getRetry() ? 8 : 0)
@@ -140,21 +150,32 @@ void Ieee80211MacHeaderSerializer::parseDataOrMgmtFrame(MemoryInputStream &strea
     if ((type == ST_DATA || type == ST_DATA_WITH_QOS) && frame->getFromDS() && frame->getToDS())
         dynamicPtrCast<Ieee80211DataHeader>(frame)->setAddress4(stream.readMacAddress());
     if (type == ST_DATA_WITH_QOS) {
-        auto dataHeader = dynamicPtrCast<Ieee80211DataHeader>(frame);
+        if(auto dataHeader = dynamicPtrCast<Ieee80211DataHeader>(frame)){
         uint16_t qos = stream.readUint16Le();
         dataHeader->setTid(qos & 0xF);
         dataHeader->setAckPolicy((inet::ieee80211::AckPolicy)((qos >> 5) & 0x03));
-        dataHeader->setAMsduPresent(qos & 0x80);
+        dataHeader->setAMsduPresent(qos & 0x80);}
     }
 }
 
 const Ptr<Chunk> Ieee80211MacHeaderSerializer::deserialize(MemoryInputStream& stream) const
 {
     uint8_t type = stream.readByte();
+    Ieee80211FrameType actual_type = static_cast<Ieee80211FrameType>(((type & 1) == 1 ? 64 : 0) |
+            ((type & 2) == 2 ? 128 : 0) |
+            ((type & 4) == 4 ? 16 : 0) |
+            ((type & 8) == 8 ? 32 : 0) |
+            ((type & 16) == 16 ? 1 : 0) |
+            ((type & 32) == 32 ? 2 : 0) |
+            ((type & 64) == 64 ? 4 : 0) |
+            ((type & 128) == 128 ? 8 : 0));
+
+
     uint8_t fc_1 = stream.readByte();  (void)fc_1; // fc_1
     if (!(type & 0x0C)) {
         auto managementHeader = makeShared<Ieee80211MgmtHeader>();
-        parseDataOrMgmtFrame(stream, managementHeader, type == 0x08 ? ST_DATA : ST_DATA_WITH_QOS, fc_1);
+        //parseDataOrMgmtFrame(stream, managementHeader, type == 0x08 ? ST_DATA : ST_DATA_WITH_QOS, fc_1);
+        parseDataOrMgmtFrame(stream, managementHeader, actual_type, fc_1);
         return managementHeader;
     }
     switch(type)
@@ -210,8 +231,10 @@ const Ptr<Chunk> Ieee80211MacHeaderSerializer::deserialize(MemoryInputStream& st
             return nullptr;
         }
 
-        default:
+        default: {
+            std::cout << "Type: " << type << " not supported!" << endl;
             throw cRuntimeError("Cannot deserialize frame");
+        }
     }
 }
 
