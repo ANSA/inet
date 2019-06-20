@@ -77,6 +77,8 @@ simple MediumVisualizerBase extends VisualizerBase
         bool spectrumAutoPowerAxis = default(true);
         double spectrumMinPower @unit(dBm) = default(-110 dBm);
         double spectrumMaxPower @unit(dBm) = default(-inf dBm);
+        string spectrumPlacementHint = default("bottomCenter"); // annotation placement hint, space separated list of any, top, bottom, left, right, topLeft, topCenter, topRight, etc. 
+        double spectrumPlacementPriority = default(-1); // determines the order of annotation positioning
 
         @class(MediumVisualizerBase);
 }

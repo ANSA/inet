@@ -15,6 +15,11 @@ using namespace inet::units::values;
 class DimensionalTransmitterTest : public DimensionalTransmitterBase
 {
   public:
+  	DimensionalTransmitterTest() {
+        timeGainsNormalization = "";
+        frequencyGainsNormalization = "";
+    }
+
     void printValue(const Ptr<const IFunction<double, simtime_t, Hz>>& function, simtime_t time) {
         std::cout << "Value at " << time << ": " << function->getValue(Point<simtime_t, Hz>(time, GHz(1))) << std::endl;
     }

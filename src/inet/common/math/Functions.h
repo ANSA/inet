@@ -45,20 +45,20 @@ template<typename R, typename ... DS>
 class INET_API FunctionBase : public IFunction<R, DS ...>
 {
   public:
-    virtual Interval<R> getRange() const {
+    virtual Interval<R> getRange() const override {
         return Interval<R>(getLowerBoundary<R>(), getUpperBoundary<R>());
     }
 
-    virtual Interval<DS ...> getDomain() const {
+    virtual Interval<DS ...> getDomain() const override {
         return Interval<DS ...>(getLowerBoundaries<DS ...>(), getUpperBoundaries<DS ...>());
     }
 
-    virtual Ptr<const IFunction<R, DS ...>> limitDomain(const Interval<DS ...>& i) const {
+    virtual Ptr<const IFunction<R, DS ...>> limitDomain(const Interval<DS ...>& i) const override {
         return makeShared<DomainLimitedFunction<R, DS ...>>(const_cast<FunctionBase<R, DS ...> *>(this)->shared_from_this(), i.intersect(getDomain()));
     }
 
-    virtual R getMin() const { return getMin(getDomain()); }
-    virtual R getMin(const Interval<DS ...>& i) const {
+    virtual R getMin() const override { return getMin(getDomain()); }
+    virtual R getMin(const Interval<DS ...>& i) const override {
         R result(getUpperBoundary<R>());
         this->partition(i, [&] (const Interval<DS ...>& i1, const IFunction<R, DS ...> *f) {
             result = std::min(f->getMin(i1), result);
@@ -66,8 +66,8 @@ class INET_API FunctionBase : public IFunction<R, DS ...>
         return result;
     }
 
-    virtual R getMax() const { return getMax(getDomain()); }
-    virtual R getMax(const Interval<DS ...>& i) const {
+    virtual R getMax() const override { return getMax(getDomain()); }
+    virtual R getMax(const Interval<DS ...>& i) const override {
         R result(getLowerBoundary<R>());
         this->partition(i, [&] (const Interval<DS ...>& i1, const IFunction<R, DS ...> *f) {
             result = std::max(f->getMax(i1), result);
@@ -75,18 +75,21 @@ class INET_API FunctionBase : public IFunction<R, DS ...>
         return result;
     }
 
-    virtual R getMean() const { return getMean(getDomain()); }
-    virtual R getMean(const Interval<DS ...>& i) const {
-        double totalVolume = 0;
+    virtual R getMean() const override { return getMean(getDomain()); }
+    virtual R getMean(const Interval<DS ...>& i, int ds = -1) const override {
+        return getIntegral(i, ds) / i.getPartialVolume(ds);
+    }
+
+    virtual R getIntegral() const override { return getMean(getDomain()); }
+    virtual R getIntegral(const Interval<DS ...>& i, int ds = -1) const override {
         R result(0);
         this->partition(i, [&] (const Interval<DS ...>& i1, const IFunction<R, DS ...> *f) {
-            auto volume = i1.getVolume(i);
-            totalVolume += volume;
+            double volume = i1.getPartialVolume(ds);
             R value = f->getMean(i1);
-            if (value != R(0))
+            if (!(value == R(0) && std::isinf(volume)))
                 result += volume * value;
         });
-        return result / totalVolume;
+        return result;
     }
 
     virtual const Ptr<const IFunction<R, DS ...>> add(const Ptr<const IFunction<R, DS ...>>& o) const override {
@@ -107,20 +110,6 @@ class INET_API FunctionBase : public IFunction<R, DS ...>
 };
 
 template<typename R, typename ... DS>
-inline std::ostream& operator<<(std::ostream& os, const IFunction<R, DS ...>& f)
-{
-    os << "f {" << std::endl;
-    f.partition(f.getDomain(), [&] (const Interval<DS ...>& i, const IFunction<R, DS ...> *g) {
-        os << "  i " << i << " -> { ";
-        iterateBoundaries<DS ...>(i, std::function<void (const Point<DS ...>&)>([&] (const Point<DS ...>& p) {
-            os << "@" << p << " = " << f.getValue(p) << ", ";
-        }));
-        os << "min = " << g->getMin(i) << ", max = " << g->getMax(i) << ", mean = " << g->getMean(i) << " }" << std::endl;
-    });
-    return os << "} min = " << f.getMin() << ", max = " << f.getMax() << ", mean = " << f.getMean();
-}
-
-template<typename R, typename ... DS>
 class INET_API DomainLimitedFunction : public FunctionBase<R, DS ...>
 {
   protected:
@@ -139,7 +128,7 @@ class INET_API DomainLimitedFunction : public FunctionBase<R, DS ...>
     }
 
     virtual void partition(const Interval<DS ...>& i, const std::function<void (const Interval<DS ...>&, const IFunction<R, DS ...> *)> g) const override {
-        auto i1 = i.intersect(domain);
+        const auto& i1 = i.intersect(domain);
         if (isValidInterval(i1))
             f->partition(i1, g);
     }
@@ -166,7 +155,8 @@ class INET_API ConstantFunction : public FunctionBase<R, DS ...>
 
     virtual R getMin(const Interval<DS ...>& i) const override { return r; }
     virtual R getMax(const Interval<DS ...>& i) const override { return r; }
-    virtual R getMean(const Interval<DS ...>& i) const override { return r; }
+    virtual R getMean(const Interval<DS ...>& i, int ds = -1) const override { return r; }
+    virtual R getIntegral(const Interval<DS ...>& i, int ds = -1) const override { return r * i.getPartialVolume(ds); }
 };
 
 template<typename R, typename X>
@@ -189,17 +179,17 @@ class INET_API OneDimensionalBoxcarFunction : public FunctionBase<R, X>
     }
 
     virtual void partition(const Interval<X>& i, const std::function<void (const Interval<X>&, const IFunction<R, X> *)> f) const override {
-        auto i1 = i.intersect(Interval<X>(getLowerBoundary<X>(), Point<X>(lower)));
+        const auto& i1 = i.intersect(Interval<X>(getLowerBoundary<X>(), Point<X>(lower)));
         if (isValidInterval(i1)) {
             ConstantFunction<R, X> g(R(0));
             f(i1, &g);
         }
-        auto i2 = i.intersect(Interval<X>(Point<X>(lower), Point<X>(upper)));
+        const auto& i2 = i.intersect(Interval<X>(Point<X>(lower), Point<X>(upper)));
         if (isValidInterval(i2)) {
             ConstantFunction<R, X> g(r);
             f(i2, &g);
         }
-        auto i3 = i.intersect(Interval<X>(Point<X>(upper), getUpperBoundary<X>()));
+        const auto& i3 = i.intersect(Interval<X>(Point<X>(upper), getUpperBoundary<X>()));
         if (isValidInterval(i3)) {
             ConstantFunction<R, X> g(R(0));
             f(i3, &g);
@@ -293,7 +283,7 @@ class INET_API LinearInterpolatedFunction : public FunctionBase<R, DS ...>
         return std::max(getValue(i.getLower()), getValue(i.getUpper()));
     }
 
-    virtual R getMean(const Interval<DS ...>& i) const override {
+    virtual R getMean(const Interval<DS ...>& i, int ds = -1) const override {
         return getValue((i.getLower() + i.getUpper()) / 2);
     }
 };
@@ -577,7 +567,7 @@ class INET_API ReciprocalFunction : public FunctionBase<R, DS ...>
             return std::max(getValue(i.getLower()), getValue(i.getUpper()));
     }
 
-    virtual R getMean(const Interval<DS ...>& i) const override {
+    virtual R getMean(const Interval<DS ...>& i, int ds = -1) const override {
         return R(getIntegral(i.getUpper()) - getIntegral(i.getLower())) / (i.getUpper().get(dimension) - i.getLower().get(dimension));
     }
 };

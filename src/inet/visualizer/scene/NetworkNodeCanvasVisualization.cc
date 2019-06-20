@@ -44,6 +44,7 @@ NetworkNodeCanvasVisualization::NetworkNodeCanvasVisualization(cModule *networkN
     submoduleBounds = getEnvir()->getSubmoduleBounds(networkNode);
     submoduleBounds.x = -submoduleBounds.width / 2;
     submoduleBounds.y = -submoduleBounds.height / 2;
+    submoduleBounds.height += 20; // KLUDGE: add label height
     if (networkNode->hasPar("canvasImage") && strlen(networkNode->par("canvasImage")) != 0) {
         auto imageFigure = new cImageFigure("node");
         imageFigure->setTooltip("This image represents a network node");

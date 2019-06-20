@@ -46,7 +46,8 @@ class INET_API DimensionalTransmitterBase : public virtual IPrintableObject
     const math::IInterpolator<Hz, double> *firstFrequencyInterpolator = nullptr;
     std::vector<GainEntry<simtime_t>> timeGains;
     std::vector<GainEntry<Hz>> frequencyGains;
-
+    const char *timeGainsNormalization = nullptr;
+    const char *frequencyGainsNormalization = nullptr;
   protected:
     virtual void initialize(int stage);
 
@@ -55,6 +56,9 @@ class INET_API DimensionalTransmitterBase : public virtual IPrintableObject
 
     virtual void parseTimeGains(const char *text);
     virtual void parseFrequencyGains(const char *text);
+
+    template<typename T>
+    const Ptr<const math::IFunction<double, T>> normalize(const Ptr<const math::IFunction<double, T>>& function, const char *normalization) const;
 
     virtual Ptr<const math::IFunction<W, simtime_t, Hz>> createPowerFunction(const simtime_t startTime, const simtime_t endTime, Hz carrierFrequency, Hz bandwidth, W power) const;
 

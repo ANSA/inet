@@ -62,7 +62,7 @@ void DimensionalMediumTest::test1()
             Point<m, m, m, simtime_t, Hz> lower(std::get<0>(position), std::get<1>(position), std::get<2>(position), time, frequency);
             Point<m, m, m, simtime_t, Hz> upper(std::get<0>(position), std::get<1>(position), std::get<2>(position), time + symbolTime, frequency + subcarrierBandwidth);
             Interval<m, m, m, simtime_t, Hz> interval(lower, upper);
-            double snirMean = snirFunction->getMean(interval);
+            double snirMean = snirFunction->getMean(interval, 0b00011);
             std::cout << "  interval = " << interval << ", SNIR mean = " << snirMean << std::endl;
         }
     }

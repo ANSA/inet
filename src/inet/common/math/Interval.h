@@ -33,8 +33,8 @@ class INET_API Interval
   protected:
     template<size_t ... IS>
     Interval<T ...> intersectImpl(const Interval<T ...>& o, integer_sequence<size_t, IS...>) const {
-        Point<T ...> l({ (std::max(std::get<IS>(lower), std::get<IS>(o.lower))) } ... );
-        Point<T ...> u({ (std::min(std::get<IS>(upper), std::get<IS>(o.upper))) } ... );
+        Point<T ...> l( (std::max(std::get<IS>(lower), std::get<IS>(o.lower))) ... );
+        Point<T ...> u( (std::min(std::get<IS>(upper), std::get<IS>(o.upper))) ... );
         return Interval<T ...>(l, u);
     }
 
@@ -46,9 +46,10 @@ class INET_API Interval
     }
 
     template<size_t ... IS>
-    double getVolumeImpl(const Interval<T ...>& o, integer_sequence<size_t, IS...>) const {
+    double getPartialVolumeImpl(int ds, integer_sequence<size_t, IS...>) const {
         double result = 1;
-        std::initializer_list<double>({ result *= (std::get<IS>(o.getLower()) != std::get<IS>(o.getUpper()) ? toDouble(std::get<IS>(upper) - std::get<IS>(lower)) : 1) ... });
+        int b = 1 << (std::tuple_size<std::tuple<T ...>>::value - 1);
+        std::initializer_list<double>({ result *= (ds & (b >> IS) ? toDouble(std::get<IS>(upper) - std::get<IS>(lower)) : (std::get<IS>(upper) == std::get<IS>(lower) ? 1 : throw cRuntimeError("Invalid arguments"))) ... });
         return std::abs(result);
     }
 
@@ -71,8 +72,8 @@ class INET_API Interval
         return getVolumeImpl(index_sequence_for<T ...>{});
     }
 
-    double getVolume(const Interval<T ...>& o) const {
-        return getVolumeImpl(o, index_sequence_for<T ...>{});
+    double getPartialVolume(int ds) const {
+        return getPartialVolumeImpl(ds, index_sequence_for<T ...>{});
     }
 };
 

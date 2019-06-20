@@ -83,6 +83,8 @@ void MediumVisualizerBase::initialize(int stage)
         spectrumAutoPowerAxis = par("spectrumAutoPowerAxis");
         spectrumMinPower = mW(math::dBm2mW(par("spectrumMinPower")));
         spectrumMaxPower = mW(math::dBm2mW(par("spectrumMaxPower")));
+        spectrumPlacementHint = parsePlacement(par("spectrumPlacementHint"));
+        spectrumPlacementPriority = par("spectrumPlacementPriority");
         mediumPowerFunction = makeShared<math::SumFunction<W, m, m, m, simtime_t, Hz>>();
         radioMedium = getModuleFromPar<IRadioMedium>(par("mediumModule"), this, false);
         if (radioMedium != nullptr) {

@@ -107,14 +107,14 @@ void MediumCanvasVisualizer::initialize(int stage)
                     plotFigure->setLineColor(1, cFigure::parseColor("darkred"));
                     plotFigure->setLineColor(2, cFigure::parseColor("darkgreen"));
                     plotFigure->setXAxisLabel("[GHz]");
-                    plotFigure->setYAxisLabel("[dBm/Hz]");
+                    plotFigure->setYAxisLabel("[dBmW/Hz]");
                     plotFigure->setXValueFormat("%.3f");
                     plotFigure->setYValueFormat("%.0f");
                     plotFigure->setTags("spectrum");
                     plotFigure->setTooltip("This plot represents the signal spectral power density");
                     plotFigure->setZIndex(zIndex);
-                    plotFigure->setBounds(cFigure::Rectangle(0, 0, spectrumFigureWidth, spectrumFigureHeight));
-                    networkNodeVisualization->addAnnotation(plotFigure, cFigure::Point(spectrumFigureWidth, spectrumFigureHeight), PLACEMENT_BOTTOM_CENTER);
+                    plotFigure->setPlotSize(cFigure::Point(spectrumFigureWidth, spectrumFigureHeight));
+                    networkNodeVisualization->addAnnotation(plotFigure, plotFigure->getSize(), spectrumPlacementHint, spectrumPlacementPriority);
                     spectrumFigures[networkNode] = plotFigure;
                 }
             }
@@ -140,6 +140,7 @@ void MediumCanvasVisualizer::refreshDisplay() const
 void MediumCanvasVisualizer::refreshSpectrumFigure(const cModule *module, PlotFigure *figure) const
 {
     auto nonCostThisPtr = const_cast<MediumCanvasVisualizer *>(this);
+    // TODO: what about multiple radios? what if it's not called wlan, etc.?
     auto wlan0 = module->getSubmodule("wlan", 0);
     const IAntenna *antenna = nullptr;
     const ITransmission *transmission = nullptr;

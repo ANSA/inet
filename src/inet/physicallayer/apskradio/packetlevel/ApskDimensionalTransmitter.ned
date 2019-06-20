@@ -17,31 +17,19 @@
 
 package inet.physicallayer.apskradio.packetlevel;
 
-import inet.physicallayer.base.packetlevel.NarrowbandTransmitterBase;
+import inet.physicallayer.base.packetlevel.DimensionalTransmitterBase;
 
 //
 // This transmitter model produces transmissions that use dimensional
 // transmission power (that changes over time and/or frequency) in their analog
 // representation and the configured modulation.
 //
-// Allowed expressions for time and frequency coordinates in the gains parameters:
-//   s|c|e
-//   s|c|e+-quantity
-//   s|c|e+-b|d
-//   s|c|e+-b|d+-quantity
-//   s|c|e+-b|d*number
-//   s|c|e+-b|d*number+-quantity
-// where s = start, c = center, b = bandwidth, d = duration. For example: c-b*0.5-1MHz
-//
 // See also ~ApskDimensionalReceiver, ~ApskDimensionalRadio,
 // ~ApskDimensionalRadioMedium, and ~APSKDimensionalAnalogModel.
 //
-module ApskDimensionalTransmitter extends NarrowbandTransmitterBase
+module ApskDimensionalTransmitter extends DimensionalTransmitterBase
 {
     parameters:
-        string timeGains = default("smaller s 0dB either e 0dB greater");      // sequence of interpolation method, time, gain tuples; time can be an expression, gain is in [dB] or [0..1]; default value is a flat signal
-        string frequencyGains = default("smaller s 0dB either e 0dB greater"); // sequence of interpolation method, frequency, gain tuples; frequency can be an expression, gain is in [dB] or [0..1]; default value is a flat signal
-        modulation = default("BPSK");
         @class(ApskDimensionalTransmitter);
 }
 

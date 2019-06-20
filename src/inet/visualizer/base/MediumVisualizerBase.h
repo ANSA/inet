@@ -79,6 +79,8 @@ class INET_API MediumVisualizerBase : public VisualizerBase, public cListener
     bool spectrumAutoPowerAxis = false;
     W spectrumMinPower = W(NaN);
     W spectrumMaxPower = W(NaN);
+    Placement spectrumPlacementHint;
+    double spectrumPlacementPriority;
     //@}
 
     /** @name State */

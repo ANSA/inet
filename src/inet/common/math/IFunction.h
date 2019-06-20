@@ -98,7 +98,17 @@ class INET_API IFunction :
     /**
      * Returns the mean value for the given domain.
      */
-    virtual R getMean(const Interval<DS ...>& i) const = 0;
+    virtual R getMean(const Interval<DS ...>& i, int ds = -1) const = 0;
+
+    /**
+     * Returns the integral value for the whole domain.
+     */
+    virtual R getIntegral() const = 0;
+
+    /**
+     * Returns the integral value for the given domain.
+     */
+    virtual R getIntegral(const Interval<DS ...>& i, int ds = -1) const = 0;
 
     /**
      * Adds the provided function to this function.
@@ -120,6 +130,20 @@ class INET_API IFunction :
      */
     virtual const Ptr<const IFunction<double, DS ...>> divide(const Ptr<const IFunction<R, DS ...>>& o) const = 0;
 };
+
+template<typename R, typename ... DS>
+inline std::ostream& operator<<(std::ostream& os, const IFunction<R, DS ...>& f)
+{
+    os << "f {" << std::endl;
+    f.partition(f.getDomain(), [&] (const Interval<DS ...>& i, const IFunction<R, DS ...> *g) {
+        os << "  i " << i << " -> { ";
+        iterateBoundaries<DS ...>(i, std::function<void (const Point<DS ...>&)>([&] (const Point<DS ...>& p) {
+            os << "@" << p << " = " << f.getValue(p) << ", ";
+        }));
+        os << "min = " << g->getMin(i) << ", max = " << g->getMax(i) << ", mean = " << g->getMean(i) << " }" << std::endl;
+    });
+    return os << "} min = " << f.getMin() << ", max = " << f.getMax() << ", mean = " << f.getMean();
+}
 
 } // namespace math
 

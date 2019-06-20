@@ -23,7 +23,7 @@ namespace inet {
 namespace math {
 
 /**
- * This interface represents a mathematical interpolation from between two points (X, Y).
+ * This interface represents a mathematical interpolation between two points (X, Y).
  */
 template<typename X, typename Y>
 class INET_API IInterpolator

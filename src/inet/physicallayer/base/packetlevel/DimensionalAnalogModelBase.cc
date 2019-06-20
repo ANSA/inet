@@ -44,16 +44,16 @@ const Ptr<const math::IFunction<W, simtime_t, Hz>> DimensionalAnalogModelBase::c
     const Coord receptionStartPosition = arrival->getStartPosition();
     double transmitterAntennaGain = computeAntennaGain(transmission->getTransmitterAntennaGain(), transmissionStartPosition, arrival->getStartPosition(), transmission->getStartOrientation());
     double receiverAntennaGain = computeAntennaGain(receiverRadio->getAntenna()->getGain().get(), arrival->getStartPosition(), transmissionStartPosition, arrival->getStartOrientation());
-    auto transmissionPower = dimensionalSignalAnalogModel->getPower();
+    const auto& transmissionPowerFunction = dimensionalSignalAnalogModel->getPower();
     EV_DEBUG << "Transmission power begin " << endl;
-    EV_DEBUG << *transmissionPower << endl;
+    EV_DEBUG << *transmissionPowerFunction << endl;
     EV_DEBUG << "Transmission power end" << endl;
     math::Point<simtime_t, Hz> propagationShift(arrival->getStartTime() - transmission->getStartTime(), Hz(0));
+    const auto& propagatedTransmissionPowerFunction = makeShared<math::ShiftFunction<W, simtime_t, Hz>>(transmissionPowerFunction, propagationShift);
     Ptr<const math::IFunction<double, simtime_t, Hz>> attenuationFunction = makeShared<AttenuationFunction>(radioMedium, transmitterAntennaGain, receiverAntennaGain, transmissionStartPosition, receptionStartPosition);
-    auto propagatedTransmissionPowerFunction = makeShared<math::ShiftFunction<W, simtime_t, Hz>>(transmissionPower, propagationShift);
     if (attenuateWithCarrierFrequency)
         attenuationFunction = makeShared<ConstantFunction<double, simtime_t, Hz>>(attenuationFunction->getValue(math::Point<simtime_t, Hz>(arrival->getStartTime(), dimensionalTransmission->getCarrierFrequency())));
-    auto receptionPower = propagatedTransmissionPowerFunction->multiply(attenuationFunction);
+    const auto& receptionPower = propagatedTransmissionPowerFunction->multiply(attenuationFunction);
     EV_DEBUG << "Reception power begin " << endl;
     EV_DEBUG << *receptionPower << endl;
     EV_DEBUG << "Reception power end" << endl;

@@ -36,8 +36,10 @@ import inet.physicallayer.base.packetlevel.NarrowbandTransmitterBase;
 module DimensionalTransmitterBase extends NarrowbandTransmitterBase
 {
     parameters:
-        string timeGains = default("smaller s 0dB either e 0dB greater");      // sequence of interpolation method, time, gain tuples; time can be an expression, gain is in [dB] or [0..1]; default value is a flat signal
+        string timeGains = default("smaller s 0dB either e 0dB greater"); // sequence of interpolation method, time, gain tuples; time can be an expression, gain is in [dB] or [0..inf); default value is a flat signal
+        string timeGainsNormalization @enum("", "maximum", "integral") = default(""); // determines how the time gains function is normalized, no normalization by default
         string frequencyGains = default("smaller s 0dB either e 0dB greater"); // sequence of interpolation method, frequency, gain tuples; frequency can be an expression, gain is in [dB] or [0..1]; default value is a flat signal
+        string frequencyGainsNormalization @enum("", "maximum", "integral") = default("integral"); // determines how the frequency gains function is normalized, integral normalization by default
         modulation = default("BPSK");
         @class(DimensionalTransmitterBase);
 }
