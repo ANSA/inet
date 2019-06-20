@@ -34,6 +34,7 @@ class INET_API AttenuationFunction : public FunctionBase<double, simtime_t, Hz>
     const double receiverAntennaGain;
     const Coord transmissionPosition;
     const Coord receptionPosition;
+    const Hz frequencyQuantization;
     m distance;
 
   protected:
@@ -45,22 +46,28 @@ class INET_API AttenuationFunction : public FunctionBase<double, simtime_t, Hz>
     }
 
   public:
-    AttenuationFunction(const IRadioMedium *radioMedium, const double transmitterAntennaGain, const double receiverAntennaGain, const Coord transmissionPosition, const Coord receptionPosition) :
-        radioMedium(radioMedium), transmitterAntennaGain(transmitterAntennaGain), receiverAntennaGain(receiverAntennaGain), transmissionPosition(transmissionPosition), receptionPosition(receptionPosition)
+    AttenuationFunction(const IRadioMedium *radioMedium, const double transmitterAntennaGain, const double receiverAntennaGain, const Coord transmissionPosition, const Coord receptionPosition, const Hz frequencyQuantization) :
+        radioMedium(radioMedium), transmitterAntennaGain(transmitterAntennaGain), receiverAntennaGain(receiverAntennaGain), transmissionPosition(transmissionPosition), receptionPosition(receptionPosition), frequencyQuantization(frequencyQuantization)
     {
         distance = m(transmissionPosition.distance(receptionPosition));
     }
 
     virtual double getValue(const Point<simtime_t, Hz>& p) const override {
-        return getAttenuation(std::get<1>(p));
+        Hz frequency = frequencyQuantization * round(unit(std::get<1>(p) / frequencyQuantization).get());
+        return getAttenuation(frequency);
     }
 
     virtual void partition(const Interval<simtime_t, Hz>& i, const std::function<void (const Interval<simtime_t, Hz>&, const IFunction<double, simtime_t, Hz> *)> f) const override {
-//        Hz frequency = MHz(1000) * round(unit(std::get<1>(i.getLower()) / MHz(1000)).get());
-//        ASSERT(frequency == MHz(1000) * round(unit(std::get<1>(i.getUpper()) / MHz(1000)).get()));
-        Hz frequency = (std::get<1>(i.getLower()) + std::get<1>(i.getUpper())) / 2;
-        ConstantFunction<double, simtime_t, Hz> g(getAttenuation(frequency));
-        f(i, &g);
+        Hz minFrequency = frequencyQuantization * floor(unit(std::get<1>(i.getLower()) / frequencyQuantization).get());
+        Hz maxFrequency = frequencyQuantization * ceil(unit(std::get<1>(i.getUpper()) / frequencyQuantization).get());
+        for (Hz frequency = minFrequency; frequency < maxFrequency; frequency += frequencyQuantization) {
+            ConstantFunction<double, simtime_t, Hz> g(getAttenuation(frequency));
+            Point<simtime_t, Hz> lower(std::get<0>(i.getLower()), std::max(std::get<1>(i.getLower()), frequency));
+            Point<simtime_t, Hz> upper(std::get<0>(i.getUpper()), std::min(std::get<1>(i.getUpper()), frequency + frequencyQuantization));
+            Interval<simtime_t, Hz> i1(lower, upper);
+            if (isValidInterval(i1))
+                f(i1, &g);
+        }
     }
 };
 
@@ -71,13 +78,14 @@ class INET_API AttenuationFunction : public FunctionBase<double, simtime_t, Hz>
 class INET_API ReceptionPowerFunction : public FunctionBase<W, m, m, m, simtime_t, Hz>
 {
   protected:
-    const mps propagationSpeed;
-    const Point<m, m, m> startPosition;
-    const Quaternion startOrientation;
     const Ptr<const IFunction<W, simtime_t, Hz>> transmissionPowerFunction;
     const Ptr<const IFunction<double, Quaternion>> transmitterAntennaGainFunction;
     const Ptr<const IFunction<double, mps, m, Hz>> pathLossFunction;
     const Ptr<const IFunction<double, m, m, m, m, m, m, Hz>> obstacleLossFunction;
+    const Point<m, m, m> startPosition;
+    const Quaternion startOrientation;
+    const mps propagationSpeed;
+    const Hz frequencyQuantization;
 
   protected:
     double getAttenuation(const Point<m, m, m, simtime_t, Hz>& p) const {
@@ -90,7 +98,7 @@ class INET_API ReceptionPowerFunction : public FunctionBase<W, m, m, m, simtime_
         m dx = x - startX;
         m dy = y - startY;
         m dz = z - startZ;
-        Hz frequency = MHz(1000) * round(unit(std::get<4>(p) / MHz(1000)).get());;
+        Hz frequency = frequencyQuantization * round(unit(std::get<4>(p) / frequencyQuantization).get());
         m distance = m(sqrt(dx * dx + dy * dy + dz * dz));
         auto direction = Quaternion::rotationFromTo(Coord::X_AXIS, Coord(dx.get(), dy.get(), dz.get()));
         auto antennaLocalDirection = startOrientation.inverse() * direction;
@@ -101,8 +109,8 @@ class INET_API ReceptionPowerFunction : public FunctionBase<W, m, m, m, simtime_
     }
 
   public:
-    ReceptionPowerFunction(const mps propagationSpeed, const Point<m, m, m> startPosition, const Quaternion startOrientation, const Ptr<const IFunction<W, simtime_t, Hz>>& transmissionPowerFunction, const Ptr<const IFunction<double, Quaternion>>& transmitterAntennaGainFunction, const Ptr<const IFunction<double, mps, m, Hz>>& pathLossFunction, const Ptr<const IFunction<double, m, m, m, m, m, m, Hz>>& obstacleLossFunction) :
-        propagationSpeed(propagationSpeed), startPosition(startPosition), startOrientation(startOrientation), transmissionPowerFunction(transmissionPowerFunction), transmitterAntennaGainFunction(transmitterAntennaGainFunction), pathLossFunction(pathLossFunction), obstacleLossFunction(obstacleLossFunction) { }
+    ReceptionPowerFunction(const Ptr<const IFunction<W, simtime_t, Hz>>& transmissionPowerFunction, const Ptr<const IFunction<double, Quaternion>>& transmitterAntennaGainFunction, const Ptr<const IFunction<double, mps, m, Hz>>& pathLossFunction, const Ptr<const IFunction<double, m, m, m, m, m, m, Hz>>& obstacleLossFunction, const Point<m, m, m> startPosition, const Quaternion startOrientation, const mps propagationSpeed, const Hz frequencyQuantization) :
+        transmissionPowerFunction(transmissionPowerFunction), transmitterAntennaGainFunction(transmitterAntennaGainFunction), pathLossFunction(pathLossFunction), obstacleLossFunction(obstacleLossFunction), startPosition(startPosition), startOrientation(startOrientation), propagationSpeed(propagationSpeed), frequencyQuantization(frequencyQuantization) { }
 
     virtual const Point<m, m, m>& getStartPosition() const { return startPosition; }
 
@@ -130,10 +138,8 @@ class INET_API ReceptionPowerFunction : public FunctionBase<W, m, m, m, simtime_
         const auto& lower = i.getLower();
         const auto& upper = i.getUpper();
         if (std::get<0>(lower) == std::get<0>(upper) && std::get<1>(lower) == std::get<1>(upper) && std::get<2>(lower) == std::get<2>(upper)) {
-            // TODO: parameter for MHz(1000) quantization
-            Hz frequency = MHz(1000) * round(unit(std::get<4>(lower) / MHz(1000)).get());
-            ASSERT(frequency == MHz(1000) * round(unit(std::get<4>(upper) / MHz(1000)).get()));
-            double attenuation = getAttenuation(Point<m, m, m, simtime_t, Hz>(std::get<0>(lower), std::get<1>(lower), std::get<2>(lower), 0, frequency));
+            Hz minFrequency = frequencyQuantization * floor(unit(std::get<4>(i.getLower()) / frequencyQuantization).get());
+            Hz maxFrequency = frequencyQuantization * ceil(unit(std::get<4>(i.getUpper()) / frequencyQuantization).get());
             m x = std::get<0>(lower);
             m y = std::get<1>(lower);
             m z = std::get<2>(lower);
@@ -145,22 +151,29 @@ class INET_API ReceptionPowerFunction : public FunctionBase<W, m, m, m, simtime_
             m dz = z - startZ;
             m distance = m(sqrt(dx * dx + dy * dy + dz * dz));
             simtime_t propagationTime = s(distance / propagationSpeed).get();
-            Interval<simtime_t, Hz> i1(Point<simtime_t, Hz>(std::get<3>(lower) - propagationTime, std::get<4>(lower)), Point<simtime_t, Hz>(std::get<3>(upper) - propagationTime, std::get<4>(upper)));
-            transmissionPowerFunction->partition(i1, [&] (const Interval<simtime_t, Hz>& i2, const IFunction<W, simtime_t, Hz> *g) {
-                Interval<m, m, m, simtime_t, Hz> i3(
-                    Point<m, m, m, simtime_t, Hz>(std::get<0>(lower), std::get<1>(lower), std::get<2>(lower), std::get<0>(i2.getLower()) + propagationTime, std::get<1>(i2.getLower())),
-                    Point<m, m, m, simtime_t, Hz>(std::get<0>(upper), std::get<1>(upper), std::get<2>(upper), std::get<0>(i2.getUpper()) + propagationTime, std::get<1>(i2.getUpper())));
-                if (auto cg = dynamic_cast<const ConstantFunction<W, simtime_t, Hz> *>(g)) {
-                    ConstantFunction<W, m, m, m, simtime_t, Hz> h(cg->getConstantValue() * attenuation);
-                    f(i3, &h);
+            for (Hz frequency = minFrequency; frequency < maxFrequency; frequency += frequencyQuantization) {
+                Point<simtime_t, Hz> l1(std::get<3>(lower) - propagationTime, std::max(std::get<4>(i.getLower()), frequency));
+                Point<simtime_t, Hz> u1(std::get<3>(upper) - propagationTime, std::min(std::get<4>(i.getUpper()), frequency + frequencyQuantization));
+                Interval<simtime_t, Hz> i1(l1, u1);
+                double attenuation = getAttenuation(Point<m, m, m, simtime_t, Hz>(std::get<0>(lower), std::get<1>(lower), std::get<2>(lower), std::get<3>(lower), frequency));
+                if (isValidInterval(i1)) {
+                    transmissionPowerFunction->partition(i1, [&] (const Interval<simtime_t, Hz>& i2, const IFunction<W, simtime_t, Hz> *g) {
+                        Interval<m, m, m, simtime_t, Hz> i3(
+                            Point<m, m, m, simtime_t, Hz>(std::get<0>(lower), std::get<1>(lower), std::get<2>(lower), std::get<0>(i2.getLower()) + propagationTime, std::get<1>(i2.getLower())),
+                            Point<m, m, m, simtime_t, Hz>(std::get<0>(upper), std::get<1>(upper), std::get<2>(upper), std::get<0>(i2.getUpper()) + propagationTime, std::get<1>(i2.getUpper())));
+                        if (auto cg = dynamic_cast<const ConstantFunction<W, simtime_t, Hz> *>(g)) {
+                            ConstantFunction<W, m, m, m, simtime_t, Hz> h(cg->getConstantValue() * attenuation);
+                            f(i3, &h);
+                        }
+                        else if (auto lg = dynamic_cast<const LinearInterpolatedFunction<W, simtime_t, Hz> *>(g)) {
+                            LinearInterpolatedFunction<W, m, m, m, simtime_t, Hz> h(i3.getLower(), i3.getUpper(), lg->getValue(i2.getLower()) * attenuation, lg->getValue(i2.getUpper()) * attenuation, lg->getDimension() + 3);
+                            f(i3, &h);
+                        }
+                        else
+                            throw cRuntimeError("TODO");
+                    });
                 }
-                else if (auto lg = dynamic_cast<const LinearInterpolatedFunction<W, simtime_t, Hz> *>(g)) {
-                    LinearInterpolatedFunction<W, m, m, m, simtime_t, Hz> h(i3.getLower(), i3.getUpper(), lg->getValue(i2.getLower()) * attenuation, lg->getValue(i2.getUpper()) * attenuation, lg->getDimension() + 3);
-                    f(i3, &h);
-                }
-                else
-                    throw cRuntimeError("TODO");
-            });
+            }
         }
         else
             throw cRuntimeError("TODO");
@@ -234,10 +247,10 @@ class INET_API AntennaGainFunction : public IFunction<double, Quaternion>
     virtual double getMax(const Interval<Quaternion>& i) const { throw cRuntimeError("TODO"); }
 
     virtual double getMean() const { throw cRuntimeError("TODO"); }
-    virtual double getMean(const Interval<Quaternion>& i, int ds = -1) const { throw cRuntimeError("TODO"); }
+    virtual double getMean(const Interval<Quaternion>& i, int dims = -1) const { throw cRuntimeError("TODO"); }
 
     virtual double getIntegral() const { throw cRuntimeError("TODO"); }
-    virtual double getIntegral(const Interval<Quaternion>& i, int ds = -1) const { throw cRuntimeError("TODO"); }
+    virtual double getIntegral(const Interval<Quaternion>& i, int dims = -1) const { throw cRuntimeError("TODO"); }
 
     virtual const Ptr<const IFunction<double, Quaternion>> add(const Ptr<const IFunction<double, Quaternion>>& o) const override { throw cRuntimeError("TODO"); }
     virtual const Ptr<const IFunction<double, Quaternion>> subtract(const Ptr<const IFunction<double, Quaternion>>& o) const override { throw cRuntimeError("TODO"); }

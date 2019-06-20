@@ -50,7 +50,8 @@ const Ptr<const math::IFunction<W, simtime_t, Hz>> DimensionalAnalogModelBase::c
     EV_DEBUG << "Transmission power end" << endl;
     math::Point<simtime_t, Hz> propagationShift(arrival->getStartTime() - transmission->getStartTime(), Hz(0));
     const auto& propagatedTransmissionPowerFunction = makeShared<math::ShiftFunction<W, simtime_t, Hz>>(transmissionPowerFunction, propagationShift);
-    Ptr<const math::IFunction<double, simtime_t, Hz>> attenuationFunction = makeShared<AttenuationFunction>(radioMedium, transmitterAntennaGain, receiverAntennaGain, transmissionStartPosition, receptionStartPosition);
+    Hz frequencyQuantization = dimensionalTransmission->getBandwidth() / 10;
+    Ptr<const math::IFunction<double, simtime_t, Hz>> attenuationFunction = makeShared<AttenuationFunction>(radioMedium, transmitterAntennaGain, receiverAntennaGain, transmissionStartPosition, receptionStartPosition, frequencyQuantization);
     if (attenuateWithCarrierFrequency)
         attenuationFunction = makeShared<ConstantFunction<double, simtime_t, Hz>>(attenuationFunction->getValue(math::Point<simtime_t, Hz>(arrival->getStartTime(), dimensionalTransmission->getCarrierFrequency())));
     const auto& receptionPower = propagatedTransmissionPowerFunction->multiply(attenuationFunction);

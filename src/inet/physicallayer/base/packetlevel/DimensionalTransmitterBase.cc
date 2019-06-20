@@ -119,14 +119,16 @@ const Ptr<const IFunction<double, T>> DimensionalTransmitterBase::normalize(cons
         return gainFunction;
     else if (!strcmp("maximum", normalization)) {
         auto max = gainFunction->getMax();
-        if (toDouble(max) == 1.0)
+        ASSERT(max != 0);
+        if (max == 1.0)
             return gainFunction;
         else
             return gainFunction->divide(makeShared<ConstantFunction<double, T>>(max));
     }
     else if (!strcmp("integral", normalization)) {
         double integral = gainFunction->getIntegral();
-        if (toDouble(integral) == 1.0)
+        ASSERT(integral != 0);
+        if (integral == 1.0)
             return gainFunction;
         else
             return gainFunction->divide(makeShared<ConstantFunction<double, T>>(integral));

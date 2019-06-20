@@ -46,10 +46,10 @@ class INET_API Interval
     }
 
     template<size_t ... IS>
-    double getPartialVolumeImpl(int ds, integer_sequence<size_t, IS...>) const {
+    double getPartialVolumeImpl(int dims, integer_sequence<size_t, IS...>) const {
         double result = 1;
         int b = 1 << (std::tuple_size<std::tuple<T ...>>::value - 1);
-        std::initializer_list<double>({ result *= (ds & (b >> IS) ? toDouble(std::get<IS>(upper) - std::get<IS>(lower)) : (std::get<IS>(upper) == std::get<IS>(lower) ? 1 : throw cRuntimeError("Invalid arguments"))) ... });
+        std::initializer_list<double>({ result *= (dims & (b >> IS) ? toDouble(std::get<IS>(upper) - std::get<IS>(lower)) : (std::get<IS>(upper) == std::get<IS>(lower) ? 1 : throw cRuntimeError("Invalid arguments"))) ... });
         return std::abs(result);
     }
 
@@ -72,8 +72,8 @@ class INET_API Interval
         return getVolumeImpl(index_sequence_for<T ...>{});
     }
 
-    double getPartialVolume(int ds) const {
-        return getPartialVolumeImpl(ds, index_sequence_for<T ...>{});
+    double getPartialVolume(int dims) const {
+        return getPartialVolumeImpl(dims, index_sequence_for<T ...>{});
     }
 };
 

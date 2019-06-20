@@ -187,14 +187,16 @@ bool MediumVisualizerBase::matchesTransmission(const ITransmission *transmission
 void MediumVisualizerBase::handleSignalAdded(const physicallayer::ITransmission *transmission)
 {
     if (auto dimensionalTransmission = dynamic_cast<const DimensionalTransmission *>(transmission)) {
-        mps propagationSpeed = radioMedium->getPropagation()->getPropagationSpeed();
-        math::Point<m, m, m> startPosition(m(transmission->getStartPosition().x), m(transmission->getStartPosition().y), m(transmission->getStartPosition().z));
-        const auto& startOrientation = transmission->getStartOrientation();
         auto transmissionPowerFunction = dimensionalTransmission->getPower();
         auto transmitterAntennaGainFunction = makeShared<AntennaGainFunction>(transmission->getTransmitter()->getAntenna()->getGain().get());
         auto pathLossFunction = makeShared<PathLossFunction>(radioMedium->getPathLoss());
+        mps propagationSpeed = radioMedium->getPropagation()->getPropagationSpeed();
+        math::Point<m, m, m> startPosition(m(transmission->getStartPosition().x), m(transmission->getStartPosition().y), m(transmission->getStartPosition().z));
+        const auto& startOrientation = transmission->getStartOrientation();
+// this worked for drawing       Hz frequencyQuantization = MHz(100);
+        Hz frequencyQuantization = dimensionalTransmission->getBandwidth() / 10;
         const Ptr<const math::IFunction<double, m, m, m, m, m, m, Hz>>& obstacleLossFunction = radioMedium->getObstacleLoss() != nullptr ? makeShared<ObstacleLossFunction>(radioMedium->getObstacleLoss()) : nullptr;
-        auto receptionPowerFunction = makeShared<ReceptionPowerFunction>(propagationSpeed, startPosition, startOrientation, transmissionPowerFunction, transmitterAntennaGainFunction, pathLossFunction, obstacleLossFunction);
+        auto receptionPowerFunction = makeShared<ReceptionPowerFunction>(transmissionPowerFunction, transmitterAntennaGainFunction, pathLossFunction, obstacleLossFunction, startPosition, startOrientation, propagationSpeed, frequencyQuantization);
         mediumPowerFunction->addElement(receptionPowerFunction);
         receptionPowerFunctions[transmission] = receptionPowerFunction;
     }

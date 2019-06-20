@@ -76,15 +76,15 @@ class INET_API FunctionBase : public IFunction<R, DS ...>
     }
 
     virtual R getMean() const override { return getMean(getDomain()); }
-    virtual R getMean(const Interval<DS ...>& i, int ds = -1) const override {
-        return getIntegral(i, ds) / i.getPartialVolume(ds);
+    virtual R getMean(const Interval<DS ...>& i, int dims = -1) const override {
+        return getIntegral(i, dims) / i.getPartialVolume(dims);
     }
 
-    virtual R getIntegral() const override { return getMean(getDomain()); }
-    virtual R getIntegral(const Interval<DS ...>& i, int ds = -1) const override {
+    virtual R getIntegral() const override { return getIntegral(getDomain()); }
+    virtual R getIntegral(const Interval<DS ...>& i, int dims = -1) const override {
         R result(0);
         this->partition(i, [&] (const Interval<DS ...>& i1, const IFunction<R, DS ...> *f) {
-            double volume = i1.getPartialVolume(ds);
+            double volume = i1.getPartialVolume(dims);
             R value = f->getMean(i1);
             if (!(value == R(0) && std::isinf(volume)))
                 result += volume * value;
@@ -155,8 +155,8 @@ class INET_API ConstantFunction : public FunctionBase<R, DS ...>
 
     virtual R getMin(const Interval<DS ...>& i) const override { return r; }
     virtual R getMax(const Interval<DS ...>& i) const override { return r; }
-    virtual R getMean(const Interval<DS ...>& i, int ds = -1) const override { return r; }
-    virtual R getIntegral(const Interval<DS ...>& i, int ds = -1) const override { return r * i.getPartialVolume(ds); }
+    virtual R getMean(const Interval<DS ...>& i, int dims = -1) const override { return r; }
+    virtual R getIntegral(const Interval<DS ...>& i, int dims = -1) const override { return r * i.getPartialVolume(dims); }
 };
 
 template<typename R, typename X>
@@ -283,7 +283,7 @@ class INET_API LinearInterpolatedFunction : public FunctionBase<R, DS ...>
         return std::max(getValue(i.getLower()), getValue(i.getUpper()));
     }
 
-    virtual R getMean(const Interval<DS ...>& i, int ds = -1) const override {
+    virtual R getMean(const Interval<DS ...>& i, int dims = -1) const override {
         return getValue((i.getLower() + i.getUpper()) / 2);
     }
 };
@@ -320,36 +320,37 @@ class INET_API OneDimensionalInterpolatedFunction : public FunctionBase<R, X>
     }
 
     virtual void partition(const Interval<X>& i, const std::function<void (const Interval<X>&, const IFunction<R, X> *)> f) const override {
-        auto lt = rs.equal_range(std::get<0>(i.getLower()));
-        auto ut = rs.equal_range(std::get<0>(i.getUpper()));
-        auto it = lt.first;
-        for (auto jt = lt.first; jt != ut.second; jt++) {
-            if (it != jt) {
-                auto i1 = i.intersect(Interval<X>(Point<X>(it->first), Point<X>(jt->first)));
-                if (isValidInterval(i1)) {
-                    const auto interpolator = it->second.second;
-                    if (dynamic_cast<const EitherInterpolator<X, R> *>(interpolator)) {
-                        ConstantFunction<R, X> g(it->second.first);
-                        f(i1, &g);
+        // loop from less or equal than lower to greater or equal than upper inclusive both ends
+        auto lt = rs.lower_bound(std::get<0>(i.getLower()));
+        auto ut = rs.upper_bound(std::get<0>(i.getUpper()));
+        if (lt->first > std::get<0>(i.getLower()))
+            lt--;
+        for (auto it = lt; it != ut; it++) {
+            auto jt = it;
+            jt++;
+            auto i1 = i.intersect(Interval<X>(Point<X>(it->first), Point<X>(jt->first)));
+            if (isValidInterval(i1)) {
+                const auto interpolator = it->second.second;
+                if (dynamic_cast<const EitherInterpolator<X, R> *>(interpolator)) {
+                    ConstantFunction<R, X> g(it->second.first);
+                    f(i1, &g);
 
-                    }
-                    else if (dynamic_cast<const SmallerInterpolator<X, R> *>(interpolator)) {
-                        ConstantFunction<R, X> g(it->second.first); // TODO: what about the ends?
-                        f(i1, &g);
-                    }
-                    else if (dynamic_cast<const GreaterInterpolator<X, R> *>(interpolator)) {
-                        ConstantFunction<R, X> g(jt->second.first); // TODO: what about the ends?
-                        f(i1, &g);
-                    }
-                    else if (dynamic_cast<const LinearInterpolator<X, R> *>(interpolator)) {
-                        LinearInterpolatedFunction<R, X> g(Point<X>(it->first), Point<X>(jt->first), it->second.first, jt->second.first, 0);
-                        f(i1, &g);
-                    }
-                    else
-                        throw cRuntimeError("TODO");
                 }
+                else if (dynamic_cast<const SmallerInterpolator<X, R> *>(interpolator)) {
+                    ConstantFunction<R, X> g(it->second.first); // TODO: what about the ends?
+                    f(i1, &g);
+                }
+                else if (dynamic_cast<const GreaterInterpolator<X, R> *>(interpolator)) {
+                    ConstantFunction<R, X> g(jt->second.first); // TODO: what about the ends?
+                    f(i1, &g);
+                }
+                else if (dynamic_cast<const LinearInterpolator<X, R> *>(interpolator)) {
+                    LinearInterpolatedFunction<R, X> g(Point<X>(it->first), Point<X>(jt->first), it->second.first, jt->second.first, 0);
+                    f(i1, &g);
+                }
+                else
+                    throw cRuntimeError("TODO");
             }
-            it = jt;
         }
     }
 };
@@ -567,7 +568,7 @@ class INET_API ReciprocalFunction : public FunctionBase<R, DS ...>
             return std::max(getValue(i.getLower()), getValue(i.getUpper()));
     }
 
-    virtual R getMean(const Interval<DS ...>& i, int ds = -1) const override {
+    virtual R getMean(const Interval<DS ...>& i, int dims = -1) const override {
         return R(getIntegral(i.getUpper()) - getIntegral(i.getLower())) / (i.getUpper().get(dimension) - i.getLower().get(dimension));
     }
 };
@@ -801,10 +802,9 @@ class INET_API SumFunction : public FunctionBase<R, DS ...>
     }
 
     virtual void partition(int index, const Interval<DS ...>& i, const std::function<void (const Interval<DS ...>&, const IFunction<R, DS ...> *)> f, const IFunction<R, DS ...> *g) const {
-        if (index == (int)fs.size()) {
+        if (index == (int)fs.size())
             f(i, g);
-        }
-        else
+        else {
             fs[index]->partition(i, [&] (const Interval<DS ...>& i1, const IFunction<R, DS ...> *h) {
                 if (auto cg = dynamic_cast<const ConstantFunction<R, DS ...> *>(g)) {
                     if (auto ch = dynamic_cast<const ConstantFunction<R, DS ...> *>(h)) {
@@ -834,6 +834,7 @@ class INET_API SumFunction : public FunctionBase<R, DS ...>
                 else
                     throw cRuntimeError("TODO");
             });
+        }
     }
 };
 

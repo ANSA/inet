@@ -37,12 +37,12 @@ void DimensionalMediumTest::test1()
 
     auto transmissionFunction1 = createPowerFunction(0, 20, GHz(1), MHz(20), mW(100));
     std::cout << "Transmission 1: " << *transmissionFunction1 << std::endl;
-    auto receptionFunction1 = makeShared<ReceptionPowerFunction>(propagationSpeed, Point<m, m, m>(m(10), m(0), m(0)), Quaternion(), transmissionFunction1, transmitterAntennaGainFunction, pathLossFunction, obstacleLossFunction);
+    auto receptionFunction1 = makeShared<ReceptionPowerFunction>(transmissionFunction1, transmitterAntennaGainFunction, pathLossFunction, obstacleLossFunction, Point<m, m, m>(m(10), m(0), m(0)), Quaternion(), propagationSpeed, MHz(1));
     //std::cout << "Reception 1: " << *receptionFunction1 << std::endl;
 
     auto transmissionFunction2 = createPowerFunction(0, 20, GHz(1), MHz(20), mW(10));
     std::cout << "Transmission 2: " << *transmissionFunction2 << std::endl;
-    auto receptionFunction2 = makeShared<ReceptionPowerFunction>(propagationSpeed, Point<m, m, m>(m(-10), m(0), m(0)), Quaternion(), transmissionFunction2, transmitterAntennaGainFunction, pathLossFunction, obstacleLossFunction);
+    auto receptionFunction2 = makeShared<ReceptionPowerFunction>(transmissionFunction2, transmitterAntennaGainFunction, pathLossFunction, obstacleLossFunction, Point<m, m, m>(m(-10), m(0), m(0)), Quaternion(), propagationSpeed, MHz(1));
     //std::cout << "Reception 2: " << *receptionFunction2 << std::endl;
 
     auto interferenceFunction = makeShared<SumFunction<W, m, m, m, simtime_t, Hz>>(std::vector<Ptr<const IFunction<W, m, m, m, simtime_t, Hz>>>({backgroundNoise, receptionFunction2}));
@@ -100,7 +100,7 @@ Transmission 2: f {
   i [(0, 1.01 GHz) ... (20, inf GHz)] -> { @(0, 1.01 GHz) = 0 W, @(20, 1.01 GHz) = 0 W, @(0, inf GHz) = 0 W, @(20, inf GHz) = 0 W, min = 0 W, max = 0 W, mean = 0 W }
   i [(20, 1.01 GHz) ... (4611686.018427387903, inf GHz)] -> { @(20, 1.01 GHz) = 0 W, @(4611686.018427387903, 1.01 GHz) = 0 W, @(20, inf GHz) = 0 W, @(4611686.018427387903, inf GHz) = 0 W, min = 0 W, max = 0 W, mean = 0 W }
 } min = 0 W, max = 10 mW, mean = 0 W
-  interval = [(0 m, 0 m, 0 m, 0.000000033356, 990 MHz) ... (0 m, 0 m, 0 m, 10.000000033356, 1 GHz)], SNIR mean = 9.99982
+  interval = [(0 m, 0 m, 0 m, 0.000000033356, 990 MHz) ... (0 m, 0 m, 0 m, 10.000000033356, 1 GHz)], SNIR mean = 9.99983
   interval = [(0 m, 0 m, 0 m, 0.000000033356, 1 GHz) ... (0 m, 0 m, 0 m, 10.000000033356, 1.01 GHz)], SNIR mean = 9.99982
-  interval = [(0 m, 0 m, 0 m, 10.000000033356, 990 MHz) ... (0 m, 0 m, 0 m, 20.000000033356, 1 GHz)], SNIR mean = 9.99982
+  interval = [(0 m, 0 m, 0 m, 10.000000033356, 990 MHz) ... (0 m, 0 m, 0 m, 20.000000033356, 1 GHz)], SNIR mean = 9.99983
   interval = [(0 m, 0 m, 0 m, 10.000000033356, 1 GHz) ... (0 m, 0 m, 0 m, 20.000000033356, 1.01 GHz)], SNIR mean = 9.99982
