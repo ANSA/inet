@@ -285,7 +285,7 @@ void Ieee80211MgmtSta::startAssociation(ApInfo *ap, simtime_t timeout)
     // string SSID
     // Ieee80211SupportedRatesElement supportedRates;
 
-    body->setChunkLength(B(2 + 2 + strlen(body->getSSID()) + 2 + body->getSupportedRates().numRates + 2));
+    body->setChunkLength(B(2 + 2 + strlen(body->getSSID()) + 2 + body->getSupportedRates().numRates + 2 + 1));
     sendManagementFrame("Assoc", body, ST_ASSOCIATIONREQUEST, ap->address);
 
     // schedule timeout
@@ -388,7 +388,7 @@ void Ieee80211MgmtSta::sendProbeRequest()
     EV << "Sending Probe Request, BSSID=" << scanning.bssid << ", SSID=\"" << scanning.ssid << "\"\n";
     const auto& body = makeShared<Ieee80211ProbeRequestFrame>();
     body->setSSID(scanning.ssid.c_str());
-    body->setChunkLength(B((2 + scanning.ssid.length()) + (2 + body->getSupportedRates().numRates)));
+    body->setChunkLength(B((2 + scanning.ssid.length()) + (2 + body->getSupportedRates().numRates) + 1));
     sendManagementFrame("ProbeReq", body, ST_PROBEREQUEST, scanning.bssid);
 }
 
