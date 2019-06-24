@@ -23,6 +23,7 @@ Register_Serializer(LinkStateMsg, LinkStatePacketSerializer);
 
 void LinkStatePacketSerializer::serialize(MemoryOutputStream& stream, const Ptr<const Chunk>& chunk) const
 {
+    throw cRuntimeError("LinkStatePacketSerializer not fully implemented yet.");
     const auto& linkStateMsg = staticPtrCast<const LinkStateMsg>(chunk);
     size_t size = linkStateMsg->getLinkInfoArraySize();
     stream.writeByte(size);
