@@ -28,6 +28,8 @@ Register_Serializer(BgpOpenMessage, BgpHeaderSerializer);
 
 void BgpHeaderSerializer::serialize(MemoryOutputStream& stream, const Ptr<const Chunk>& chunk) const
 {
+    throw cRuntimeError("BgpHeaderSerializer not fully implemented yet.");
+
     const auto& bgpHeader = staticPtrCast<const BgpHeader>(chunk);
     // each message has a fixed-size header:
     // -> Marker (16 bytes = 128 bits): MUST be set to all ones
