@@ -30,7 +30,11 @@ Register_Serializer(RtcpSenderReportPacket, RtcpPacketSerializer);
 
 void RtcpPacketSerializer::serialize(MemoryOutputStream& stream, const Ptr<const Chunk>& chunk) const
 {
+    throw cRuntimeError("RtcpPacketSerializer not fully implemented yet.");
     const auto& rtcpPacket = staticPtrCast<const RtcpPacket>(chunk);
+
+    B start_position = B(stream.getLength());
+
     stream.writeNBitsOfUint64Be(rtcpPacket->getVersion(), 2);
     stream.writeBit(rtcpPacket->getPadding());
     stream.writeNBitsOfUint64Be(rtcpPacket->getCount(), 5);
@@ -57,6 +61,10 @@ void RtcpPacketSerializer::serialize(MemoryOutputStream& stream, const Ptr<const
                     stream.writeUint32Be(receptionReport->getDelaySinceLastSR());
                 }
             }
+            std::cout << "length of stream of rtcpSenderReportPacket: " << stream.getLength() - start_position << endl;
+            std::cout << "chunkLength: " << rtcpSenderReportPacket->getChunkLength() << endl;
+            std::cout << "my count: " << B(4) + B(24) + B(size * 24) << endl;
+            ASSERT(rtcpSenderReportPacket->getChunkLength() == B(4) + B(24) + B(size * 24));
             break;
         }
         case RTCP_PT_RR: {
@@ -75,13 +83,17 @@ void RtcpPacketSerializer::serialize(MemoryOutputStream& stream, const Ptr<const
                     stream.writeUint32Be(receptionReport->getDelaySinceLastSR());
                 }
             }
+            std::cout << "length of stream of rtcpReceiverReportPacket: " << stream.getLength() - start_position << endl;
+            std::cout << "chunkLength: " << rtcpReceiverReportPacket->getChunkLength() << endl;
+            std::cout << "my count: " << B(4) + B(4) + B(size * 24) << endl;
+            ASSERT(rtcpReceiverReportPacket->getChunkLength() == B(4) + B(4) + B(size * 24));
             break;
         }
         case RTCP_PT_SDES: {
             const auto& rtcpSdesPacket = staticPtrCast<const RtcpSdesPacket>(chunk);
             int num_chunks = rtcpSdesPacket->getCount();
             for(int i = 0; i < num_chunks; ++i){
-                const SdesChunk* sdesChunk = static_cast<const SdesChunk*>(&rtcpSdesPacket->getSdesChunks());
+                const SdesChunk* sdesChunk = static_cast<const SdesChunk*>(rtcpSdesPacket->getSdesChunks()[i]);
                 stream.writeUint32Be(sdesChunk->getSsrc());
                 for(int e = 0; e < sdesChunk->size(); ++e){
                     const SdesItem* sdesItem = static_cast<const SdesItem*>(sdesChunk->get(e));
@@ -107,6 +119,9 @@ void RtcpPacketSerializer::serialize(MemoryOutputStream& stream, const Ptr<const
                 // included in sdesChunk by default.
                 stream.writeByteRepeatedly(0, (sdesChunk->getLength() + 1) % 4);
             }
+            std::cout << "length of stream of rtcpSdesPacket: " << stream.getLength() - start_position << endl;
+            std::cout << "chunkLength: " << rtcpSdesPacket->getChunkLength() << endl;
+            ASSERT(rtcpSdesPacket->getChunkLength() == (stream.getLength() - start_position));
             break;
         }
         case RTCP_PT_BYE: {
@@ -118,6 +133,9 @@ void RtcpPacketSerializer::serialize(MemoryOutputStream& stream, const Ptr<const
             stream.writeByte(0);
             // padding
             stream.writeByteRepeatedly(0, 3);
+            std::cout << "length of stream of rtcpByePacket: " << stream.getLength() - start_position << endl;
+            std::cout << "chunkLength: " << rtcpByePacket->getChunkLength() << endl;
+            ASSERT(rtcpByePacket->getChunkLength() == (stream.getLength() - start_position));
             break;
         }
         default: {
@@ -135,10 +153,15 @@ const Ptr<Chunk> RtcpPacketSerializer::deserialize(MemoryInputStream& stream) co
     rtcpPacket->setPadding(stream.readBit());
     rtcpPacket->setCount(stream.readNBitsToUint64Be(5));
     rtcpPacket->setPacketType((RtcpPacketType)stream.readByte());
-    rtcpPacket->setRtcpLength(stream.readUint32Be());
+    rtcpPacket->setRtcpLength(stream.readUint16Be());
     switch(rtcpPacket->getPacketType()){
         case RTCP_PT_SR: {
             auto rtcpSenderReportPacket = makeShared<RtcpSenderReportPacket>();
+            rtcpSenderReportPacket->setVersion(rtcpPacket->getVersion());
+            rtcpSenderReportPacket->setPadding(rtcpPacket->getPadding());
+            rtcpSenderReportPacket->setCount(rtcpPacket->getCount());
+            rtcpSenderReportPacket->setPacketType(rtcpPacket->getPacketType());
+            rtcpSenderReportPacket->setRtcpLength(rtcpPacket->getRtcpLength());
             rtcpSenderReportPacket->setSsrc(stream.readUint32Be());
             rtcpSenderReportPacket->getSenderReportForUpdate().setNTPTimeStamp(stream.readUint64Be());
             rtcpSenderReportPacket->getSenderReportForUpdate().setRTPTimeStamp(stream.readUint32Be());
@@ -156,10 +179,16 @@ const Ptr<Chunk> RtcpPacketSerializer::deserialize(MemoryInputStream& stream) co
                 receptionReport.setDelaySinceLastSR(stream.readUint32Be());
                 rtcpSenderReportPacket->addReceptionReport(&receptionReport);
             }
+            rtcpPacket = rtcpSenderReportPacket;
             break;
         }
         case RTCP_PT_RR: {
             auto rtcpReceiverReportPacket = makeShared<RtcpReceiverReportPacket>();
+            rtcpReceiverReportPacket->setVersion(rtcpPacket->getVersion());
+            rtcpReceiverReportPacket->setPadding(rtcpPacket->getPadding());
+            rtcpReceiverReportPacket->setCount(rtcpPacket->getCount());
+            rtcpReceiverReportPacket->setPacketType(rtcpPacket->getPacketType());
+            rtcpReceiverReportPacket->setRtcpLength(rtcpPacket->getRtcpLength());
             rtcpReceiverReportPacket->setSsrc(stream.readUint32Be());
             int size = rtcpReceiverReportPacket->getCount();
             for(int i = 0; i < size; ++i){
@@ -173,10 +202,16 @@ const Ptr<Chunk> RtcpPacketSerializer::deserialize(MemoryInputStream& stream) co
                 receptionReport.setDelaySinceLastSR(stream.readUint32Be());
                 rtcpReceiverReportPacket->addReceptionReport(&receptionReport);
             }
+            rtcpPacket = rtcpReceiverReportPacket;
             break;
         }
         case RTCP_PT_SDES: {
             auto rtcpSdesPacket = makeShared<RtcpSdesPacket>();
+            rtcpSdesPacket->setVersion(rtcpPacket->getVersion());
+            rtcpSdesPacket->setPadding(rtcpPacket->getPadding());
+            rtcpSdesPacket->setCount(rtcpPacket->getCount());
+            rtcpSdesPacket->setPacketType(rtcpPacket->getPacketType());
+            rtcpSdesPacket->setRtcpLength(rtcpPacket->getRtcpLength());
             int num_chunks = rtcpSdesPacket->getCount();
             for(int i = 0; i < num_chunks; ++i){
                 SdesChunk sdesChunk;
@@ -192,12 +227,19 @@ const Ptr<Chunk> RtcpPacketSerializer::deserialize(MemoryInputStream& stream) co
                 stream.readByteRepeatedly(0, (sdesChunk.getLength() + 1) % 4);
                 rtcpSdesPacket->addSDESChunk(&sdesChunk);
             }
+            rtcpPacket = rtcpSdesPacket;
             break;
         }
         case RTCP_PT_BYE: {
             auto rtcpByePacket = makeShared<RtcpByePacket>();
+            rtcpByePacket->setVersion(rtcpPacket->getVersion());
+            rtcpByePacket->setPadding(rtcpPacket->getPadding());
+            rtcpByePacket->setCount(rtcpPacket->getCount());
+            rtcpByePacket->setPacketType(rtcpPacket->getPacketType());
+            rtcpByePacket->setRtcpLength(rtcpPacket->getRtcpLength());
             rtcpByePacket->setSsrc(stream.readUint32Be());
             stream.readUint32Be();
+            rtcpPacket = rtcpByePacket;
             break;
         }
         default: {
@@ -205,6 +247,7 @@ const Ptr<Chunk> RtcpPacketSerializer::deserialize(MemoryInputStream& stream) co
             break;
         }
     }
+    return rtcpPacket;
 }
 
 } // namespace inet::rtp
