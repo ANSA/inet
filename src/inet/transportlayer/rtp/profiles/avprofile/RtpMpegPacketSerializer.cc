@@ -24,15 +24,16 @@ Register_Serializer(RtpMpegHeader, RtpMpegPacketSerializer);
 void RtpMpegPacketSerializer::serialize(MemoryOutputStream& stream, const Ptr<const Chunk>& chunk) const
 {
     const auto& rtpMpegHeader = staticPtrCast<const RtpMpegHeader>(chunk);
-    stream.writeUint32Be(rtpMpegHeader->getPayloadLength());
-    stream.writeUint32Be(rtpMpegHeader->getPictureType());
+    stream.writeUint16Be(rtpMpegHeader->getPayloadLength());
+    stream.writeUint16Be(rtpMpegHeader->getPictureType());
 }
 
 const Ptr<Chunk> RtpMpegPacketSerializer::deserialize(MemoryInputStream& stream) const
 {
     auto rtpMpegHeader = makeShared<RtpMpegHeader>();
-    rtpMpegHeader->setPayloadLength(stream.readUint32Be());
-    rtpMpegHeader->setPictureType(stream.readUint32Be());
+    rtpMpegHeader->setPayloadLength(stream.readUint16Be());
+    rtpMpegHeader->setPictureType(stream.readUint16Be());
+    return rtpMpegHeader;
 }
 
 } // namespace inet::rtp
