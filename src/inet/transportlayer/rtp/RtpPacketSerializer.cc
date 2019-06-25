@@ -24,8 +24,8 @@ Register_Serializer(RtpHeader, RtpPacketSerializer);
 void RtpPacketSerializer::serialize(MemoryOutputStream& stream, const Ptr<const Chunk>& chunk) const
 {
     const auto& rtpHeader = staticPtrCast<const RtpHeader>(chunk);
-    stream.writeBit(rtpHeader->getVersion() & 2 == 2);
-    stream.writeBit(rtpHeader->getVersion() & 1 == 1);
+    stream.writeBit((rtpHeader->getVersion() & 2) == 2);
+    stream.writeBit((rtpHeader->getVersion() & 1) == 1);
     stream.writeBit(rtpHeader->getPadding());
     stream.writeBit(rtpHeader->getExtension());
     stream.writeUint4(rtpHeader->getCsrcArraySize());
@@ -33,7 +33,7 @@ void RtpPacketSerializer::serialize(MemoryOutputStream& stream, const Ptr<const 
 
     uint8_t m = 64;
     for(uint8_t i = 0; i < 7; ++i){
-        stream.writeBit(rtpHeader->getPayloadType() & m == m);
+        stream.writeBit((rtpHeader->getPayloadType() & m) == m);
         m /= 2;
     }
 
@@ -72,6 +72,7 @@ const Ptr<Chunk> RtpPacketSerializer::deserialize(MemoryInputStream& stream) con
     for(uint8_t i = 0; i < rtpHeader->getCsrcArraySize(); ++i){
         rtpHeader->setCsrc(i, stream.readUint32Be());
     }
+    return rtpHeader;
 }
 
 } // namespace inet::rtp
