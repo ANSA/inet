@@ -24,40 +24,22 @@ Register_Serializer(SimpleVoipPacket, SimpleVoipPacketSerializer);
 void SimpleVoipPacketSerializer::serialize(MemoryOutputStream& stream, const Ptr<const Chunk>& chunk) const
 {
 	const auto& simpleVoipPacket = staticPtrCast<const SimpleVoipPacket>(chunk);
-	stream.writeUint16Be(simpleVoipPacket->getTalkspurtID());
-	stream.writeUint16Be(simpleVoipPacket->getTalkspurtNumPackets());
-	stream.writeUint16Be(simpleVoipPacket->getPacketID());
-
-	//simtime_t timeStamp = simpleVoipPacket->getVoipTimestamp();
-	//stream.writeUint64Be(timeStamp->inUnit(SIMTIME_AS));
-	//SimTime(int64_t value, SimTimeUnit unit);
-	//stream.writeUint32Be(timeStamp->getScaleExp());
-	//static void setScaleExp(int e);
-	// from scaleexp the following values can be calculated:
-	//	dscale
-	//	fscale
-	//	invfscale
+	stream.writeUint32Be(simpleVoipPacket->getTalkspurtID());
+	stream.writeUint32Be(simpleVoipPacket->getTalkspurtNumPackets());
+	stream.writeUint32Be(simpleVoipPacket->getPacketID());
 	stream.writeUint64Be(simpleVoipPacket->getVoipTimestamp().raw());
-
-	//simtime_t voiceDuration = simpleVoipPacket->getVoiceDuration();
-	//stream.writeUint64Be(voiceDuration->inUnit(SIMTIME_AS));
 	stream.writeUint64Be(simpleVoipPacket->getVoiceDuration().raw());
 }
 
 const Ptr<Chunk> SimpleVoipPacketSerializer::deserialize(MemoryInputStream& stream) const
 {
 	auto simpleVoipPacket = makeShared<SimpleVoipPacket>();
-	simpleVoipPacket->setTalkspurtID(stream.readUint16Be());
-	simpleVoipPacket->setTalkspurtNumPackets(stream.readUint16Be());
-	simpleVoipPacket->setPacketID(stream.readUint16Be());
-
-	//simtime_t timeStamp = SimTime(stream.readUint64Be(), SIMTIME_AS);
-	//simpleVoipPacket->setVoipTimestamp(timeStamp);
+	simpleVoipPacket->setTalkspurtID(stream.readUint32Be());
+	simpleVoipPacket->setTalkspurtNumPackets(stream.readUint32Be());
+	simpleVoipPacket->setPacketID(stream.readUint32Be());
 	simpleVoipPacket->setVoipTimestamp(SimTime().setRaw(stream.readUint64Be()));
-
-	//simtime_t voiceDuration = SimTime(stream.readUint64Be(), SIMTIME_AS);
-	//simpleVoipPacket->setVoiceDuration(voiceDuration);
 	simpleVoipPacket->setVoiceDuration(SimTime().setRaw(stream.readUint64Be()));
+	return simpleVoipPacket;
 }
 
 } // namespace inet

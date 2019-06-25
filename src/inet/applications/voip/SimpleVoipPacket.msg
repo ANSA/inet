@@ -26,10 +26,10 @@ namespace inet;
 //
 class SimpleVoipPacket extends FieldsChunk
 {
+    chunkLength = B(28);
     unsigned int talkspurtID;          // identifies the talkspurt
     unsigned int talkspurtNumPackets;  // number of all packets of current talkspurt
     unsigned int packetID;             // 0..talkspurtNumPackets-1
     simtime_t voipTimestamp;            // "mouth" timestamp of begin of voice in this packet
     simtime_t voiceDuration;            // duration of voice in this packet
 }
-
