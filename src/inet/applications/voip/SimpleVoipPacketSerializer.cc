@@ -29,6 +29,7 @@ void SimpleVoipPacketSerializer::serialize(MemoryOutputStream& stream, const Ptr
 	stream.writeUint32Be(simpleVoipPacket->getPacketID());
 	stream.writeUint64Be(simpleVoipPacket->getVoipTimestamp().raw());
 	stream.writeUint64Be(simpleVoipPacket->getVoiceDuration().raw());
+	ASSERT(simpleVoipPacket->getChunkLength() == B(28));
 }
 
 const Ptr<Chunk> SimpleVoipPacketSerializer::deserialize(MemoryInputStream& stream) const
