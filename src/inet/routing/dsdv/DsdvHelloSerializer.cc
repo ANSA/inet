@@ -37,6 +37,8 @@ const Ptr<Chunk> DsdvHelloSerializer::deserialize(MemoryInputStream& stream) con
 	dsdvHello->setSequencenumber(stream.readUint16Be());
 	dsdvHello->setNextAddress(Ipv4Address(stream.readUint32Be()));
 	dsdvHello->setHopdistance(stream.readUint16Be());
+	dsdvHello->setChunkLength(B(12));
+	return dsdvHello;
 }
 
 } // namespace inet
