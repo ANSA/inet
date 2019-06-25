@@ -38,6 +38,7 @@ const Ptr<Chunk> EchoPacketSerializer::deserialize(MemoryInputStream& stream) co
 	    echoPacket->setType(ECHO_PROTOCOL_REPLY);
 	echoPacket->setIdentifier(stream.readUint16Be());
 	echoPacket->setSeqNumber(stream.readUint16Be());
+	return echoPacket;
 }
 
 } // namespace inet
