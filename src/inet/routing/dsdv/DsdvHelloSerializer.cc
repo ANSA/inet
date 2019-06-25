@@ -25,19 +25,19 @@ void DsdvHelloSerializer::serialize(MemoryOutputStream& stream, const Ptr<const 
 {
 	const auto& dsdvHello = staticPtrCast<const DsdvHello>(chunk);
 	stream.writeUint32Be(dsdvHello->getSrcAddress().getInt());
-	stream.writeUint16Be(dsdvHello->getSequencenumber());
+	stream.writeUint32Be(dsdvHello->getSequencenumber());
 	stream.writeUint32Be(dsdvHello->getNextAddress().getInt());
-	stream.writeUint16Be(dsdvHello->getHopdistance());
+	stream.writeUint32Be(dsdvHello->getHopdistance());
 }
 
 const Ptr<Chunk> DsdvHelloSerializer::deserialize(MemoryInputStream& stream) const
 {
 	auto dsdvHello = makeShared<DsdvHello>();
 	dsdvHello->setSrcAddress(Ipv4Address(stream.readUint32Be()));
-	dsdvHello->setSequencenumber(stream.readUint16Be());
+	dsdvHello->setSequencenumber(stream.readUint32Be());
 	dsdvHello->setNextAddress(Ipv4Address(stream.readUint32Be()));
-	dsdvHello->setHopdistance(stream.readUint16Be());
-	dsdvHello->setChunkLength(B(12));
+	dsdvHello->setHopdistance(stream.readUint32Be());
+	dsdvHello->setChunkLength(b(128));
 	return dsdvHello;
 }
 
