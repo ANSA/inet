@@ -23,6 +23,7 @@ namespace inet {
 
 namespace  physicallayer {
 
+Register_Serializer(Ieee80211PhyHeader, Ieee80211PhyHeaderSerializer);
 Register_Serializer(Ieee80211FhssPhyHeader, Ieee80211PhyHeaderSerializer);
 Register_Serializer(Ieee80211IrPhyHeader, Ieee80211PhyHeaderSerializer);
 Register_Serializer(Ieee80211DsssPhyHeader, Ieee80211PhyHeaderSerializer);
