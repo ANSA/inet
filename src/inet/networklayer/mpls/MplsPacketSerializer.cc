@@ -25,23 +25,26 @@ void MplsPacketSerializer::serialize(MemoryOutputStream& stream, const Ptr<const
 {
     const auto& mplsHeader = staticPtrCast<const MplsHeader>(chunk);
     size_t size = mplsHeader->getLabelsArraySize();
-    for(int i = 0; i < size; ++i){
-        int m = 524288; // 2^19
+    for(uint8_t i = 0; i < size; ++i){
+        stream.writeNBitsOfUint64Be(mplsHeader->getLabels(i).getLabel(), 20);
+        /*int m = 524288; // 2^19
         for(int e = 0; e < 20; ++e){
             stream.writeBit((mplsHeader->getLabels(i).getLabel() & m) == m);
             m /= 2;
-        }
+        }*/
 
-        m = 4; // 2^3
+        stream.writeNBitsOfUint64Be(mplsHeader->getLabels(i).getTc(), 3);
+        /*m = 4; // 2^3
         for(int e = 0; e < 3; ++e){
-            stream.writeBit((mplsHeader->getLabels(i).getLabel() & m) == m);
+            stream.writeBit((mplsHeader->getLabels(i).getTc() & m) == m);
             m /= 2;
-        }
+        }*/
 
         stream.writeBit(i == size - 1);
 
         stream.writeByte(mplsHeader->getLabels(i).getTtl());
     }
+    ASSERT(mplsHeader->getChunkLength() == B(4 * size));
 }
 
 const Ptr<Chunk> MplsPacketSerializer::deserialize(MemoryInputStream& stream) const
@@ -53,21 +56,23 @@ const Ptr<Chunk> MplsPacketSerializer::deserialize(MemoryInputStream& stream) co
         mplsHeader->setLabelsArraySize(mplsHeader->getLabelsArraySize() + 1);
         MplsLabel mplsLabel = mplsHeader->getLabels(i);
 
-        long label = 0;
+        mplsLabel.setLabel(stream.readNBitsToUint64Be(20));
+        /*long label = 0;
         int m = 524288; // 2^19
         for(int e = 0; e < 20; ++e){
             label += stream.readBit() & m;
             m /= 2;
         }
-        mplsLabel.setLabel(label);
+        mplsLabel.setLabel(label);*/
 
-        short tc = 0;
+        mplsLabel.setTc(stream.readNBitsToUint64Be(3));
+        /*short tc = 0;
         m = 4; // 2^3
         for(int e = 0; e < 3; ++e){
             tc += stream.readBit() & m;
             m /= 2;
         }
-        mplsLabel.setTc(tc);
+        mplsLabel.setTc(tc);*/
 
         mbool = stream.readBit();
 
@@ -76,6 +81,8 @@ const Ptr<Chunk> MplsPacketSerializer::deserialize(MemoryInputStream& stream) co
         mplsHeader->setLabels(i, mplsLabel);
         ++i;
     }
+    mplsHeader->setChunkLength(B(4 * i));
+    return mplsHeader;
 }
 
 } // namespace inet
