@@ -68,7 +68,7 @@ const Ptr<Chunk> LinkStatePacketSerializer::deserialize(MemoryInputStream& strea
     }
     linkStateMsg->setRequest(stream.readBit());
     linkStateMsg->setCommand(stream.readUint32Be());
-
+    return linkStateMsg;
 }
 
 } // namespace inet
