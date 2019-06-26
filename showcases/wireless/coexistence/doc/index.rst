@@ -193,9 +193,37 @@ with a power of -110 dBm. Here is the radio medium configuration in :download:`o
 
 .. **TODO: wifi channel number offset**
 
-The Wifi hosts are configured to have :ned:`Ieee80211DimensionalRadio`. The default signal shape
-in time is not changed in the transmitter, so the radio uses a flat signal in time.
+The Wifi hosts are configured to have :ned:`Ieee80211DimensionalRadio`. The default ``timeGains`` parameter is not changed in the transmitter, so the radio uses a flat signal in time.
 In frequency, instead of the default flat signal, we configure a more realistic shape.
+We'll use the 802.11 OFDM spectral mask, as in the standard:
+
+.. figure:: spectralmask_wifi.png
+   :width: 100%
+   :align: center
+
+Here is the ``frequencyGains`` parameter value specifying this spectrum:
+
+.. literalinclude:: ../omnetpp.ini
+   :start-at: wifiHost*.wlan[*].radio.transmitter.frequencyGains
+   :end-at: wifiHost*.wlan[*].radio.transmitter.frequencyGains
+   :language: ini
+
+.. The parameter's syntax uses ``c`` as the center frequency and ``b`` as bandwidth.
+
+   - what b and c means
+   - what smaller and greater means
+   - implied stuff
+   - interpolation mode
+
+Briefly about the syntax:
+
+- The parameter uses frequency and gain pairs to define points on the frequency/gain graph. Between these points, the interpolation mode can be specified.
+- The ``-inf Hz/-inf dB`` and the ``+inf Hz/+inf dB`` points are implicit (hence the ``frequencyGains`` string starts with an interpolation mode).
+- ``c`` is the center frequency and ``b`` is the bandwidth. These values are the property of the transmission, i.e. the receiver listens on the center frequency and bandwidth. However, the signal can have radio energy outside of this range, which can cause interference.
+
+**TODO**
+
+For more on the syntax, see :ned:`DimensionalTransmitterBase.ned`.
 
 **TODO**
 

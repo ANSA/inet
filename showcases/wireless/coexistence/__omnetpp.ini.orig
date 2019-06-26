@@ -127,12 +127,12 @@ fingerprint = 0be6-e2b7/tlx
 # -set 802154 on wifi guard interval frequency
 # -increase distance
 
-# baseline performance -> something like using separate radio mediums or frequencies
+# baseline performance -> something like using separate radio mediums or frequencies 
 # or just running them isolated
-#
+# 
 # all of them on the same frequency -> see how it degrades performance
 #
-# reduce duty cycle -> see how the performance is affected
+# reduce duty cycle -> see how the performance is affected 
 # (improved)(compared to a baseline reduced performance)
 #
 # guard interval frequency -> should be some energy there -> is it so in the sim?
