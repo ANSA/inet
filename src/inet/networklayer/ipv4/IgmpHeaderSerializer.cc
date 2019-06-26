@@ -209,7 +209,7 @@ const Ptr<Chunk> IgmpHeaderSerializer::deserialize(MemoryInputStream& stream) co
 
     ASSERT(packet);
     packet->setCrc(chksum);
-    packet->setCrcMode(CRC_COMPUTED);
+    //packet->setCrcMode(CRC_COMPUTED);
     return packet;
 }
 
