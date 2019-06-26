@@ -19,7 +19,8 @@
 
 #include "inet/common/packet/serializer/FieldsChunkSerializer.h"
 
-namespace inet::rtp {
+namespace inet {
+namespace rtp {
 
 /**
  * Converts between RtpPacket and binary (network byte order) RTP packet.
@@ -34,7 +35,8 @@ class INET_API RtpPacketSerializer : public FieldsChunkSerializer
     RtpPacketSerializer() : FieldsChunkSerializer() {}
 };
 
-} // namespace inet::rtp
+} // namespace rtp
+} // namespace inet
 
 
 #endif /* INET_TRANSPORTLAYER_RTP_RTPPACKETSERIALIZER_H_ */

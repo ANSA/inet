@@ -19,7 +19,8 @@
 
 // FIXME: I got lost with all the castings, not sure if it is correct
 
-namespace inet::rtp {
+namespace inet {
+namespace rtp {
 
 Register_Serializer(RtcpPacket, RtcpPacketSerializer);
 
@@ -250,22 +251,6 @@ const Ptr<Chunk> RtcpPacketSerializer::deserialize(MemoryInputStream& stream) co
     return rtcpPacket;
 }
 
-} // namespace inet::rtp
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+} // namespace rtp
+} // namespace inet
 
