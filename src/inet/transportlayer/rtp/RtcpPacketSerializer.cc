@@ -221,8 +221,8 @@ const Ptr<Chunk> RtcpPacketSerializer::deserialize(MemoryInputStream& stream) co
                 while(itemType != 0){
                     // reading out the length field, it is set by the constructor
                     uint8_t length = stream.readByte();
-                    SdesItem sdesItem = SdesItem((SdesItem::SdesItemType)itemType, stream.readStringOfNBytes(length));
-                    sdesChunk.addSDESItem(&sdesItem);
+//                    SdesItem sdesItem = SdesItem((SdesItem::SdesItemType)itemType, stream.readStringOfNBytes(length));
+//                    sdesChunk.addSDESItem(&sdesItem);
                     itemType = stream.readByte();
                 }
                 stream.readByteRepeatedly(0, (sdesChunk.getLength() + 1) % 4);
