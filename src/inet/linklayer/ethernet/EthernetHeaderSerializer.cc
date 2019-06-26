@@ -149,8 +149,6 @@ const Ptr<Chunk> EthernetPhyHeaderSerializer::deserialize(MemoryInputStream& str
     uint8_t sfd = stream.readByte();
     if (!preambleReadSuccessfully || sfd != 0xD5)
         ethernetPhyHeader->markIncorrect();
-    // FIXME!!!!! this is just metadata
-    ethernetPhyHeader->setSrcMacFullDuplex(true);
     return ethernetPhyHeader;
 }
 
