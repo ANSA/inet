@@ -175,6 +175,8 @@ void Igmpv2::initialize(int stage)
         lastMemberQueryCount = par("lastMemberQueryCount");
         unsolicitedReportInterval = par("unsolicitedReportInterval");
         //version1RouterPresentInterval = par("version1RouterPresentInterval");
+        const char *crcModeString = par("crcMode");
+        crcMode = parseCrcMode(crcModeString);
 
         addWatches();
     }

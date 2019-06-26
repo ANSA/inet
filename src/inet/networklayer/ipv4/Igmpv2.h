@@ -186,6 +186,9 @@ class INET_API Igmpv2 : public cSimpleModule, public IProtocolRegistrationListen
     int numLeavesSent = 0;
     int numLeavesRecv = 0;
 
+    //crcMode
+    CrcMode crcMode = CRC_MODE_UNDEFINED;
+
     typedef std::map<int, HostInterfaceData *> InterfaceToHostDataMap;
     typedef std::map<int, RouterInterfaceData *> InterfaceToRouterDataMap;
 
