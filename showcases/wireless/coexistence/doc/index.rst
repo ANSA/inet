@@ -225,10 +225,10 @@ Briefly about the syntax:
 
 For more on the syntax, see :ned:`DimensionalTransmitterBase.ned`.
 
-**TODO**
+.. **TODO**
 
-- about how to specify the psu
-- what shapes we're using
+   - about how to specify the psu
+   - what shapes we're using
 
 The Wifi channel is set to Channel 9 (center frequency of 2452MHz) to ensure that the Wifi transmissions overlap with the 802.15.4 transmissions in frequency. Here is the configuration for the Wifi host radios in
 :download:`omnetpp.ini <../omnetpp.ini>`:
@@ -242,7 +242,20 @@ The Wifi channel is set to Channel 9 (center frequency of 2452MHz) to ensure tha
 
 The WPAN hosts are configured to have an :ned:`Ieee802154NarrowbandInterface`,
 with a :ned:`Ieee802154NarrowbandDimensionalRadio`. As in the case of the Wifi hosts,
-the default flat signal shape is used. The default carrier frequency (2450 MHz) and bandwidth (2.8 MHz) is not changed.
+the default flat signal shape is used in time. In frequency, we'll use a more realistic shape, based on the modulated spectrum of the CC2420 Zigbee transmitter:
+
+.. figure:: media/spectrum_wpan.png
+   :width: 100%
+   :align: center
+
+We'll use the approximation indicated with red. Here is the ``frequencyGains`` parameter value specifying this spectrum:
+
+.. literalinclude:: ../omnetpp.ini
+   :start-at: wpanHost*.wlan[*].radio.transmitter.frequencyGains = "smaller c-5MHz
+   :end-at: wpanHost*.wlan[*].radio.transmitter.frequencyGains = "smaller c-5MHz
+   :language: ini
+
+The default carrier frequency (2450 MHz) and bandwidth (2.8 MHz) is not changed.
 Here is the configuration for the WPAN host radios in :download:`omnetpp.ini <../omnetpp.ini>`:
 
 .. literalinclude:: ../omnetpp.ini
@@ -523,10 +536,6 @@ the averaging of the repetitions.
 
    .. figure:: media/seqchart.png
       :width: 100%
-
-.. figure:: media/spectrum.png
-   :width: 100%
-   :align: center
 
 Sources: :download:`omnetpp.ini <../omnetpp.ini>`, :download:`CoexistenceShowcase.ned <../CoexistenceShowcase.ned>`
 
