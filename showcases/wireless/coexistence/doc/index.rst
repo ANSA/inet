@@ -258,6 +258,8 @@ We'll use the approximation indicated with red. Here is the ``frequencyGains`` p
 The default carrier frequency (2450 MHz) and bandwidth (2.8 MHz) is not changed.
 Here is the configuration for the WPAN host radios in :download:`omnetpp.ini <../omnetpp.ini>`:
 
+.. defined in :ned:`Ieee802154NarrowbandRadio`
+
 .. literalinclude:: ../omnetpp.ini
    :start-at: Ieee802154NarrowbandInterface
    :end-at: Ieee802154NarrowbandDimensionalRadio
