@@ -14,8 +14,8 @@ VoIP traffic.
 This showcase demonstrates how one can run simulated VoIP applications
 over a real network using INET components.
 
-INET version: ``4.0``
-Source files location: `inet/showcases/emulation/ExtUdpVoip <https://github.com/inet-framework/inet-showcases/tree/master/emulation/osudpVoip>`__
+| INET version: ``4.0``
+| Source files location: `inet/showcases/emulation/ExtUdpVoip <https://github.com/inet-framework/inet-showcases/tree/master/emulation/osudpVoip>`__
 
 About VoIP
 ----------
