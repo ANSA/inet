@@ -197,7 +197,7 @@ The Wifi hosts are configured to have :ned:`Ieee80211DimensionalRadio`. The defa
 In frequency, instead of the default flat signal, we configure a more realistic shape.
 We'll use the 802.11 OFDM spectral mask, as in the standard:
 
-.. figure:: spectralmask_wifi.png
+.. figure:: media/spectralmask_wifi.png
    :width: 100%
    :align: center
 
