@@ -219,7 +219,7 @@ Briefly about the syntax:
 
 - The parameter uses frequency and gain pairs to define points on the frequency/gain graph. Between these points, the interpolation mode can be specified.
 - The ``-inf Hz/-inf dB`` and the ``+inf Hz/+inf dB`` points are implicit (hence the ``frequencyGains`` string starts with an interpolation mode).
-- ``c`` is the center frequency and ``b`` is the bandwidth. These values are the property of the transmission, i.e. the receiver listens on the center frequency and bandwidth. However, the signal can have radio energy outside of this range, which can cause interference.
+- ``c`` is the center frequency and ``b`` is the bandwidth. These values are properties of the transmission, i.e. the receiver listens on the center frequency and bandwidth. However, the signal can have radio energy outside of this range, which can cause interference.
 
 **TODO**
 
