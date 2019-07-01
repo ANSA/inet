@@ -33,7 +33,7 @@ channels into three cases:
 
 There is a simulation for each case in omnetpp.ini.
 
-| INET version: ``4.0``
+| INET version: ``4.2``
 | Source files location: `inet/showcases/wireless/crosstalk <https://github.com/inet-framework/inet-showcases/tree/master/wireless/crosstalk>`__
 
 The model
