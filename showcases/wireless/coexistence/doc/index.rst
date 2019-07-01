@@ -13,7 +13,7 @@ Simulation can be used to examine how the different protocols
 interact and affect each other's operation. This showcase demonstrates the coexistence
 of INET's 802.11 and 802.15.4 models.
 
-| INET version: ``4.1``
+| INET version: ``4.2``
 | Source files location: `inet/showcases/wireless/coexistence <https://github.com/inet-framework/inet-showcases/tree/master/wireless/coexistence>`__
 
 The Model
