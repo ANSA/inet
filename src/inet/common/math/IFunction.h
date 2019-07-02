@@ -26,14 +26,29 @@ namespace inet {
 namespace math {
 
 /**
- * This interface represents a mathematical function from domain DS to range R.
+ * This class represents the domain of a mathematical function.
  */
-template<typename R, typename ... DS>
+template<typename ... T>
+class Domain : public std::tuple<T ...>
+{
+  public:
+    typedef Point<T ...> P;
+    typedef Interval<T ...> I;
+
+  public:
+    Domain(T ... t) : std::tuple<T ...>(t ...) { }
+};
+
+
+/**
+ * This interface represents a mathematical function from domain D to range R.
+ */
+template<typename R, typename D>
 class INET_API IFunction :
 #if INET_PTR_IMPLEMENTATION == INET_STD_SHARED_PTR
     public std::enable_shared_from_this<Chunk>
 #elif INET_PTR_IMPLEMENTATION == INET_INTRUSIVE_PTR
-    public IntrusivePtrCounter<IFunction<R, DS ...>>
+    public IntrusivePtrCounter<IFunction<R, D>>
 #else
 #error "Unknown Ptr implementation"
 #endif
@@ -49,26 +64,29 @@ class INET_API IFunction :
     /**
      * Returns the valid domain of the function as a closed interval.
      */
-    virtual Interval<DS ...> getDomain() const = 0;
+    virtual typename D::I getDomain() const = 0;
 
     /**
      * Returns the value of the function at the given point. The returned value
      * falls into the range of the function. The provided point must fall into
      * the domain of the function.
      */
-    virtual R getValue(const Point<DS ...>& p) const = 0;
+    virtual R getValue(const typename D::P& p) const = 0;
 
     /**
      * Subdivides the provided domain and calls back the provided function with
      * the subdomains and the corresponding potentially simpler domain limited function.
      */
-    virtual void partition(const Interval<DS ...>& i, const std::function<void (const Interval<DS ...>&, const IFunction<R, DS ...> *)> f) const = 0;
+    virtual void partition(const typename D::I& i, const std::function<void (const typename D::I&, const IFunction<R, D> *)> f) const = 0;
 
     /**
      * Returns a function that represents the same function as this limited to
      * the given domain.
      */
-    virtual Ptr<const IFunction<R, DS ...>> limitDomain(const Interval<DS ...>& i) const = 0;
+    virtual Ptr<const IFunction<R, D>> limitDomain(const typename D::I& i) const = 0;
+
+    template<int DIMS, typename RI, typename DI>
+    Ptr<const IFunction<RI, DI>> integrate() const;
 
     /**
      * Returns the minimum value for the whole domain.
@@ -78,7 +96,7 @@ class INET_API IFunction :
     /**
      * Returns the minimum value for the given domain.
      */
-    virtual R getMin(const Interval<DS ...>& i) const = 0;
+    virtual R getMin(const typename D::I& i) const = 0;
 
     /**
      * Returns the maximum value for the whole domain.
@@ -88,7 +106,7 @@ class INET_API IFunction :
     /**
      * Returns the maximum value for the given domain.
      */
-    virtual R getMax(const Interval<DS ...>& i) const = 0;
+    virtual R getMax(const typename D::I& i) const = 0;
 
     /**
      * Returns the mean value for the whole domain.
@@ -98,7 +116,7 @@ class INET_API IFunction :
     /**
      * Returns the mean value for the given domain.
      */
-    virtual R getMean(const Interval<DS ...>& i, int dims = -1) const = 0;
+    virtual R getMean(const typename D::I& i, int dims = -1) const = 0;
 
     /**
      * Returns the integral value for the whole domain.
@@ -108,41 +126,43 @@ class INET_API IFunction :
     /**
      * Returns the integral value for the given domain.
      */
-    virtual R getIntegral(const Interval<DS ...>& i, int dims = -1) const = 0;
+    virtual R getIntegral(const typename D::I& i, int dims = -1) const = 0;
 
     /**
      * Adds the provided function to this function.
      */
-    virtual const Ptr<const IFunction<R, DS ...>> add(const Ptr<const IFunction<R, DS ...>>& o) const = 0;
+    virtual const Ptr<const IFunction<R, D>> add(const Ptr<const IFunction<R, D>>& o) const = 0;
 
     /**
      * Substracts the provided function from this function.
      */
-    virtual const Ptr<const IFunction<R, DS ...>> subtract(const Ptr<const IFunction<R, DS ...>>& o) const = 0;
+    virtual const Ptr<const IFunction<R, D>> subtract(const Ptr<const IFunction<R, D>>& o) const = 0;
 
     /**
      * Multiplies the provided function with this function.
      */
-    virtual const Ptr<const IFunction<R, DS ...>> multiply(const Ptr<const IFunction<double, DS ...>>& o) const = 0;
+    virtual const Ptr<const IFunction<R, D>> multiply(const Ptr<const IFunction<double, D>>& o) const = 0;
 
     /**
      * Divides this function with the provided function.
      */
-    virtual const Ptr<const IFunction<double, DS ...>> divide(const Ptr<const IFunction<R, DS ...>>& o) const = 0;
+    virtual const Ptr<const IFunction<double, D>> divide(const Ptr<const IFunction<R, D>>& o) const = 0;
 };
 
-template<typename R, typename ... DS>
-inline std::ostream& operator<<(std::ostream& os, const IFunction<R, DS ...>& f)
+template<typename R, typename D>
+inline std::ostream& operator<<(std::ostream& os, const IFunction<R, D>& f)
 {
-    os << "f {" << std::endl;
-    f.partition(f.getDomain(), [&] (const Interval<DS ...>& i, const IFunction<R, DS ...> *g) {
-        os << "  i " << i << " -> { ";
-        iterateBoundaries<DS ...>(i, std::function<void (const Point<DS ...>&)>([&] (const Point<DS ...>& p) {
-            os << "@" << p << " = " << f.getValue(p) << ", ";
-        }));
-        os << "min = " << g->getMin(i) << ", max = " << g->getMax(i) << ", mean = " << g->getMean(i) << " }" << std::endl;
-    });
-    return os << "} min = " << f.getMin() << ", max = " << f.getMax() << ", mean = " << f.getMean();
+    // TODO:
+//    os << "f {" << std::endl;
+//    f.partition(f.getDomain(), [&] (const typename D::I& i, const IFunction<R, D> *g) {
+//        os << "  i " << i << " -> { ";
+//        iterateBoundaries<typename D::I>(i, std::function<void (const typename D::P&)>([&] (const typename D::P& p) {
+//            os << "@" << p << " = " << f.getValue(p) << ", ";
+//        }));
+//        os << "min = " << g->getMin(i) << ", max = " << g->getMax(i) << ", mean = " << g->getMean(i) << " }" << std::endl;
+//    });
+//    return os << "} min = " << f.getMin() << ", max = " << f.getMax() << ", mean = " << f.getMean();
+    return os;
 }
 
 } // namespace math

@@ -28,13 +28,13 @@ namespace physicallayer {
 class INET_API DimensionalNoise : public NarrowbandNoiseBase
 {
   protected:
-    const Ptr<const math::IFunction<WpHz, simtime_t, Hz>> power;
+    const Ptr<const math::IFunction<WpHz, math::Domain<simtime_t, Hz>>> power;
 
   public:
-    DimensionalNoise(simtime_t startTime, simtime_t endTime, Hz carrierFrequency, Hz bandwidth, const Ptr<const math::IFunction<WpHz, simtime_t, Hz>>& power);
+    DimensionalNoise(simtime_t startTime, simtime_t endTime, Hz carrierFrequency, Hz bandwidth, const Ptr<const math::IFunction<WpHz, math::Domain<simtime_t, Hz>>>& power);
 
     virtual std::ostream& printToStream(std::ostream& stream, int level) const override;
-    virtual const Ptr<const math::IFunction<WpHz, simtime_t, Hz>>& getPower() const { return power; }
+    virtual const Ptr<const math::IFunction<WpHz, math::Domain<simtime_t, Hz>>>& getPower() const { return power; }
 
     virtual W computeMinPower(simtime_t startTime, simtime_t endTime) const override;
     virtual W computeMaxPower(simtime_t startTime, simtime_t endTime) const override;

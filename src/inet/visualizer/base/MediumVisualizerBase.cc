@@ -85,7 +85,7 @@ void MediumVisualizerBase::initialize(int stage)
         spectrumMaxPower = WpHz(math::dBmWpMHz2WpHz(par("spectrumMaxPower")));
         spectrumPlacementHint = parsePlacement(par("spectrumPlacementHint"));
         spectrumPlacementPriority = par("spectrumPlacementPriority");
-        mediumPowerFunction = makeShared<math::SumFunction<WpHz, m, m, m, simtime_t, Hz>>();
+        mediumPowerFunction = makeShared<math::SumFunction<WpHz, math::Domain<m, m, m, simtime_t, Hz>>>();
         radioMedium = getModuleFromPar<IRadioMedium>(par("mediumModule"), this, false);
         if (radioMedium != nullptr) {
             cModule *radioMediumModule = check_and_cast<cModule *>(radioMedium);
@@ -194,7 +194,7 @@ void MediumVisualizerBase::handleSignalAdded(const physicallayer::ITransmission 
         math::Point<m, m, m> startPosition(m(transmission->getStartPosition().x), m(transmission->getStartPosition().y), m(transmission->getStartPosition().z));
         const auto& startOrientation = transmission->getStartOrientation();
         Hz frequencyQuantization = dimensionalTransmission->getBandwidth() / 10;
-        const Ptr<const math::IFunction<double, m, m, m, m, m, m, Hz>>& obstacleLossFunction = radioMedium->getObstacleLoss() != nullptr ? makeShared<ObstacleLossFunction>(radioMedium->getObstacleLoss()) : nullptr;
+        const Ptr<const math::IFunction<double, math::Domain<m, m, m, m, m, m, Hz>>>& obstacleLossFunction = radioMedium->getObstacleLoss() != nullptr ? makeShared<ObstacleLossFunction>(radioMedium->getObstacleLoss()) : nullptr;
         auto receptionPowerFunction = makeShared<ReceptionPowerFunction>(transmissionPowerFunction, transmitterAntennaGainFunction, pathLossFunction, obstacleLossFunction, startPosition, startOrientation, propagationSpeed, frequencyQuantization);
         mediumPowerFunction->addElement(receptionPowerFunction);
         receptionPowerFunctions[transmission] = receptionPowerFunction;

@@ -56,7 +56,7 @@ class INET_API Ieee802154UwbIrTransmitter : public TransmitterBase
     virtual void generateBurst(std::map<simtime_t, WpHz>& data, simtime_t& time, const simtime_t startTime, const simtime_t burstStart, short polarity) const;
     virtual void generatePulse(std::map<simtime_t, WpHz>& data, simtime_t& time, const simtime_t startTime, short polarity, double peak, const simtime_t chip) const;
 
-    virtual Ptr<const math::IFunction<WpHz, simtime_t, Hz>> generateIEEE802154AUWBSignal(const simtime_t startTime, std::vector<bool> *bits) const;
+    virtual Ptr<const math::IFunction<WpHz, math::Domain<simtime_t, Hz>>> generateIEEE802154AUWBSignal(const simtime_t startTime, std::vector<bool> *bits) const;
 
   public:
     Ieee802154UwbIrTransmitter();

@@ -24,15 +24,15 @@ class DimensionalTransmitterTest : public DimensionalTransmitterBase
         std::cout << "Value at " << time << ": " << function->getValue(Point<simtime_t, Hz>(time, GHz(1))) << std::endl;
     }
 
-    void printValue(const Ptr<const IFunction<WpHz, simtime_t, Hz>>& function, simtime_t time) {
+    void printValue(const Ptr<const IFunction<WpHz, math::Domain<simtime_t, Hz>>>& function, simtime_t time) {
         std::cout << "Value at " << time << ": " << function->getValue(Point<simtime_t, Hz>(time, GHz(1))) << std::endl;
     }
 
-    void printValue(const Ptr<const IFunction<WpHz, simtime_t, Hz>>& function, Hz frequency) {
+    void printValue(const Ptr<const IFunction<WpHz, math::Domain<simtime_t, Hz>>>& function, Hz frequency) {
         std::cout << "Value at " << frequency << ": " << function->getValue(Point<simtime_t, Hz>(20, frequency)) << std::endl;
     }
 
-    void printValue(const Ptr<const IFunction<WpHz, simtime_t, Hz>>& function, simtime_t time, Hz frequency) {
+    void printValue(const Ptr<const IFunction<WpHz, math::Domain<simtime_t, Hz>>>& function, simtime_t time, Hz frequency) {
         std::cout << "Value at " << time << " " << frequency << ": " << function->getValue(Point<simtime_t, Hz>(time, frequency)) << std::endl;
     }
 
@@ -42,7 +42,7 @@ class DimensionalTransmitterTest : public DimensionalTransmitterBase
 	    std::cout << "Mean value: " << function->getMean() << std::endl;
     }
 
-    void printMinMax(const Ptr<const IFunction<WpHz, simtime_t, Hz>>& function) {
+    void printMinMax(const Ptr<const IFunction<WpHz, math::Domain<simtime_t, Hz>>>& function) {
 	    std::cout << "Min value: " << function->getMin() << std::endl;
 	    std::cout << "Max value: " << function->getMax() << std::endl;
 	    std::cout << "Mean value: " << function->getMean() << std::endl;

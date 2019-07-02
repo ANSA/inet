@@ -149,8 +149,8 @@ void MediumCanvasVisualizer::refreshSpectrumFigure(const cModule *module, PlotFi
         antenna = radio->getAntenna();
         auto dimensionalTransmission = dynamic_cast<const DimensionalTransmission *>(radio->getTransmissionInProgress());
         if (spectrumAutoFrequencyAxis && dimensionalTransmission != nullptr) {
-            dimensionalTransmission->getPower()->partition(dimensionalTransmission->getPower()->getDomain(), [&] (const Interval<simtime_t, Hz>& i, const IFunction<WpHz, simtime_t, Hz> *f) {
-                if (auto constantFunction = dynamic_cast<const ConstantFunction<WpHz, simtime_t, Hz> *>(f)) {
+            dimensionalTransmission->getPower()->partition(dimensionalTransmission->getPower()->getDomain(), [&] (const Interval<simtime_t, Hz>& i, const IFunction<WpHz, math::Domain<simtime_t, Hz>> *f) {
+                if (auto constantFunction = dynamic_cast<const ConstantFunction<WpHz, math::Domain<simtime_t, Hz>> *>(f)) {
                     if (constantFunction->getConstantValue() == WpHz(0))
                         return;
                 }

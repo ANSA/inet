@@ -26,64 +26,72 @@ namespace math {
 
 using namespace inet::units::values;
 
-template<typename R, typename ... DS>
+template<typename R, typename D>
 class INET_API DomainLimitedFunction;
 
-template<typename R, typename ... DS>
+template<typename R, typename D>
+class INET_API IntegratedFunction;
+
+template<typename R, typename D>
 class INET_API AdditionFunction;
 
-template<typename R, typename ... DS>
+template<typename R, typename D>
 class INET_API SubtractionFunction;
 
-template<typename R, typename ... DS>
+template<typename R, typename D>
 class INET_API MultiplicationFunction;
 
-template<typename R, typename ... DS>
+template<typename R, typename D>
 class INET_API DivisionFunction;
 
-template<typename R, typename ... DS>
-class INET_API FunctionBase : public IFunction<R, DS ...>
+template<typename R, typename D>
+class INET_API FunctionBase : public IFunction<R, D>
 {
   public:
     virtual Interval<R> getRange() const override {
         return Interval<R>(getLowerBoundary<R>(), getUpperBoundary<R>());
     }
 
-    virtual Interval<DS ...> getDomain() const override {
-        return Interval<DS ...>(getLowerBoundaries<DS ...>(), getUpperBoundaries<DS ...>());
+    virtual typename D::I getDomain() const override {
+        return typename D::I(D::P::getLowerBoundaries(), D::P::getUpperBoundaries());
     }
 
-    virtual Ptr<const IFunction<R, DS ...>> limitDomain(const Interval<DS ...>& i) const override {
-        return makeShared<DomainLimitedFunction<R, DS ...>>(const_cast<FunctionBase<R, DS ...> *>(this)->shared_from_this(), i.intersect(getDomain()));
+    virtual Ptr<const IFunction<R, D>> limitDomain(const typename D::I& i) const override {
+        return makeShared<DomainLimitedFunction<R, D>>(const_cast<FunctionBase<R, D> *>(this)->shared_from_this(), i.intersect(getDomain()));
+    }
+
+    template<int DIMS, typename RI, typename DI>
+    Ptr<const IFunction<RI, DI>> integrate() const {
+        return makeShared<IntegratedFunction<RI, DI>>(this);
     }
 
     virtual R getMin() const override { return getMin(getDomain()); }
-    virtual R getMin(const Interval<DS ...>& i) const override {
+    virtual R getMin(const typename D::I& i) const override {
         R result(getUpperBoundary<R>());
-        this->partition(i, [&] (const Interval<DS ...>& i1, const IFunction<R, DS ...> *f) {
+        this->partition(i, [&] (const typename D::I& i1, const IFunction<R, D> *f) {
             result = std::min(f->getMin(i1), result);
         });
         return result;
     }
 
     virtual R getMax() const override { return getMax(getDomain()); }
-    virtual R getMax(const Interval<DS ...>& i) const override {
+    virtual R getMax(const typename D::I& i) const override {
         R result(getLowerBoundary<R>());
-        this->partition(i, [&] (const Interval<DS ...>& i1, const IFunction<R, DS ...> *f) {
+        this->partition(i, [&] (const typename D::I& i1, const IFunction<R, D> *f) {
             result = std::max(f->getMax(i1), result);
         });
         return result;
     }
 
     virtual R getMean() const override { return getMean(getDomain()); }
-    virtual R getMean(const Interval<DS ...>& i, int dims = -1) const override {
+    virtual R getMean(const typename D::I& i, int dims = -1) const override {
         return getIntegral(i, dims) / i.getPartialVolume(dims);
     }
 
     virtual R getIntegral() const override { return getIntegral(getDomain()); }
-    virtual R getIntegral(const Interval<DS ...>& i, int dims = -1) const override {
+    virtual R getIntegral(const typename D::I& i, int dims = -1) const override {
         R result(0);
-        this->partition(i, [&] (const Interval<DS ...>& i1, const IFunction<R, DS ...> *f) {
+        this->partition(i, [&] (const typename D::I& i1, const IFunction<R, D> *f) {
             double volume = i1.getPartialVolume(dims);
             R value = f->getMean(i1);
             if (!(value == R(0) && std::isinf(volume)))
@@ -92,50 +100,57 @@ class INET_API FunctionBase : public IFunction<R, DS ...>
         return result;
     }
 
-    virtual const Ptr<const IFunction<R, DS ...>> add(const Ptr<const IFunction<R, DS ...>>& o) const override {
-        return makeShared<AdditionFunction<R, DS ...>>(const_cast<FunctionBase<R, DS ...> *>(this)->shared_from_this(), o);
+    virtual const Ptr<const IFunction<R, D>> add(const Ptr<const IFunction<R, D>>& o) const override {
+        return makeShared<AdditionFunction<R, D>>(const_cast<FunctionBase<R, D> *>(this)->shared_from_this(), o);
     }
 
-    virtual const Ptr<const IFunction<R, DS ...>> subtract(const Ptr<const IFunction<R, DS ...>>& o) const override {
-        return makeShared<SubtractionFunction<R, DS ...>>(const_cast<FunctionBase<R, DS ...> *>(this)->shared_from_this(), o);
+    virtual const Ptr<const IFunction<R, D>> subtract(const Ptr<const IFunction<R, D>>& o) const override {
+        return makeShared<SubtractionFunction<R, D>>(const_cast<FunctionBase<R, D> *>(this)->shared_from_this(), o);
     }
 
-    virtual const Ptr<const IFunction<R, DS ...>> multiply(const Ptr<const IFunction<double, DS ...>>& o) const override {
-        return makeShared<MultiplicationFunction<R, DS ...>>(const_cast<FunctionBase<R, DS ...> *>(this)->shared_from_this(), o);
+    virtual const Ptr<const IFunction<R, D>> multiply(const Ptr<const IFunction<double, D>>& o) const override {
+        return makeShared<MultiplicationFunction<R, D>>(const_cast<FunctionBase<R, D> *>(this)->shared_from_this(), o);
     }
 
-    virtual const Ptr<const IFunction<double, DS ...>> divide(const Ptr<const IFunction<R, DS ...>>& o) const override {
-        return makeShared<DivisionFunction<R, DS ...>>(const_cast<FunctionBase<R, DS ...> *>(this)->shared_from_this(), o);
+    virtual const Ptr<const IFunction<double, D>> divide(const Ptr<const IFunction<R, D>>& o) const override {
+        return makeShared<DivisionFunction<R, D>>(const_cast<FunctionBase<R, D> *>(this)->shared_from_this(), o);
     }
 };
 
-template<typename R, typename ... DS>
-class INET_API DomainLimitedFunction : public FunctionBase<R, DS ...>
+template<typename R, typename D>
+class INET_API DomainLimitedFunction : public FunctionBase<R, D>
 {
   protected:
-    const Ptr<const IFunction<R, DS ...>> f;
-    const Interval<DS ...> domain;
+    const Ptr<const IFunction<R, D>> f;
+    const typename D::I domain;
 
   public:
-    DomainLimitedFunction(const Ptr<const IFunction<R, DS ...>>& f, const Interval<DS ...>& domain) : f(f), domain(domain) { }
+    DomainLimitedFunction(const Ptr<const IFunction<R, D>>& f, const typename D::I& domain) : f(f), domain(domain) { }
 
     virtual Interval<R> getRange() const override { return Interval<R>(this->getMin(domain), this->getMax(domain)); };
-    virtual Interval<DS ...> getDomain() const override { return domain; };
+    virtual typename D::I getDomain() const override { return domain; };
 
-    virtual R getValue(const Point<DS ...>& p) const override {
+    virtual R getValue(const typename D::P& p) const override {
         ASSERT(domain.contains(p));
         return f->getValue(p);
     }
 
-    virtual void partition(const Interval<DS ...>& i, const std::function<void (const Interval<DS ...>&, const IFunction<R, DS ...> *)> g) const override {
+    virtual void partition(const typename D::I& i, const std::function<void (const typename D::I&, const IFunction<R, D> *)> g) const override {
         const auto& i1 = i.intersect(domain);
         if (isValidInterval(i1))
             f->partition(i1, g);
     }
 };
 
-template<typename R, typename ... DS>
-class INET_API ConstantFunction : public FunctionBase<R, DS ...>
+template<typename R, typename D>
+class INET_API IntegratedFunction : public FunctionBase<R, D>
+{
+  protected:
+    const Ptr<const IFunction<R, D>> f;
+};
+
+template<typename R, typename D>
+class INET_API ConstantFunction : public FunctionBase<R, D>
 {
   protected:
     const R r;
@@ -147,20 +162,20 @@ class INET_API ConstantFunction : public FunctionBase<R, DS ...>
 
     virtual Interval<R> getRange() const { return Interval<R>(r, r); }
 
-    virtual R getValue(const Point<DS ...>& p) const override { return r; }
+    virtual R getValue(const typename D::P& p) const override { return r; }
 
-    virtual void partition(const Interval<DS ...>& i, const std::function<void (const Interval<DS ...>&, const IFunction<R, DS ...> *)> f) const override {
+    virtual void partition(const typename D::I& i, const std::function<void (const typename D::I&, const IFunction<R, D> *)> f) const override {
         f(i, this);
     }
 
-    virtual R getMin(const Interval<DS ...>& i) const override { return r; }
-    virtual R getMax(const Interval<DS ...>& i) const override { return r; }
-    virtual R getMean(const Interval<DS ...>& i, int dims = -1) const override { return r; }
-    virtual R getIntegral(const Interval<DS ...>& i, int dims = -1) const override { return r * i.getPartialVolume(dims); }
+    virtual R getMin(const typename D::I& i) const override { return r; }
+    virtual R getMax(const typename D::I& i) const override { return r; }
+    virtual R getMean(const typename D::I& i, int dims = -1) const override { return r; }
+    virtual R getIntegral(const typename D::I& i, int dims = -1) const override { return r * i.getPartialVolume(dims); }
 };
 
 template<typename R, typename X>
-class INET_API OneDimensionalBoxcarFunction : public FunctionBase<R, X>
+class INET_API OneDimensionalBoxcarFunction : public FunctionBase<R, Domain<X>>
 {
   protected:
     const X lower;
@@ -178,27 +193,27 @@ class INET_API OneDimensionalBoxcarFunction : public FunctionBase<R, X>
         return std::get<0>(p) < lower || std::get<0>(p) >= upper ? R(0) : r;
     }
 
-    virtual void partition(const Interval<X>& i, const std::function<void (const Interval<X>&, const IFunction<R, X> *)> f) const override {
+    virtual void partition(const Interval<X>& i, const std::function<void (const Interval<X>&, const IFunction<R, Domain<X>> *)> f) const override {
         const auto& i1 = i.intersect(Interval<X>(getLowerBoundary<X>(), Point<X>(lower)));
         if (isValidInterval(i1)) {
-            ConstantFunction<R, X> g(R(0));
+            ConstantFunction<R, Domain<X>> g(R(0));
             f(i1, &g);
         }
         const auto& i2 = i.intersect(Interval<X>(Point<X>(lower), Point<X>(upper)));
         if (isValidInterval(i2)) {
-            ConstantFunction<R, X> g(r);
+            ConstantFunction<R, Domain<X>> g(r);
             f(i2, &g);
         }
         const auto& i3 = i.intersect(Interval<X>(Point<X>(upper), getUpperBoundary<X>()));
         if (isValidInterval(i3)) {
-            ConstantFunction<R, X> g(R(0));
+            ConstantFunction<R, Domain<X>> g(R(0));
             f(i3, &g);
         }
     }
 };
 
 template<typename R, typename X, typename Y>
-class INET_API TwoDimensionalBoxcarFunction : public FunctionBase<R, X, Y>
+class INET_API TwoDimensionalBoxcarFunction : public FunctionBase<R, Domain<X, Y>>
 {
   protected:
     const X lowerX;
@@ -208,9 +223,9 @@ class INET_API TwoDimensionalBoxcarFunction : public FunctionBase<R, X, Y>
     const R r;
 
   protected:
-    void callf(const Interval<X, Y>& i, const std::function<void (const Interval<X, Y>&, const IFunction<R, X, Y> *)> f, R r) const {
+    void callf(const Interval<X, Y>& i, const std::function<void (const Interval<X, Y>&, const IFunction<R, Domain<X, Y>> *)> f, R r) const {
         if (isValidInterval(i)) {
-            ConstantFunction<R, X, Y> g(r);
+            ConstantFunction<R, Domain<X, Y>> g(r);
             f(i, &g);
         }
     }
@@ -226,7 +241,7 @@ class INET_API TwoDimensionalBoxcarFunction : public FunctionBase<R, X, Y>
         return std::get<0>(p) < lowerX || std::get<0>(p) >= upperX || std::get<1>(p) < lowerY || std::get<1>(p) >= upperY ? R(0) : r;
     }
 
-    virtual void partition(const Interval<X, Y>& i, const std::function<void (const Interval<X, Y>&, const IFunction<R, X, Y> *)> f) const override {
+    virtual void partition(const Interval<X, Y>& i, const std::function<void (const Interval<X, Y>&, const IFunction<R, Domain<X, Y>> *)> f) const override {
         callf(i.intersect(Interval<X, Y>(Point<X, Y>(getLowerBoundary<X>(), getLowerBoundary<Y>()), Point<X, Y>(X(lowerX), Y(lowerY)))), f, R(0));
         callf(i.intersect(Interval<X, Y>(Point<X, Y>(X(lowerX), getLowerBoundary<Y>()), Point<X, Y>(X(upperX), Y(lowerY)))), f, R(0));
         callf(i.intersect(Interval<X, Y>(Point<X, Y>(X(upperX), getLowerBoundary<Y>()), Point<X, Y>(getUpperBoundary<X>(), Y(lowerY)))), f, R(0));
@@ -241,21 +256,21 @@ class INET_API TwoDimensionalBoxcarFunction : public FunctionBase<R, X, Y>
     }
 };
 
-template<typename R, typename ... DS>
-class INET_API LinearInterpolatedFunction : public FunctionBase<R, DS ...>
+template<typename R, typename D>
+class INET_API LinearInterpolatedFunction : public FunctionBase<R, D>
 {
   protected:
-    const Point<DS ...> lower; // value is ignored in all but one dimension
-    const Point<DS ...> upper; // value is ignored in all but one dimension
+    const typename D::P lower; // value is ignored in all but one dimension
+    const typename D::P upper; // value is ignored in all but one dimension
     const R rLower;
     const R rUpper;
     const int dimension;
 
   public:
-    LinearInterpolatedFunction(Point<DS ...> lower, Point<DS ...> upper, R rLower, R rUpper, int dimension) : lower(lower), upper(upper), rLower(rLower), rUpper(rUpper), dimension(dimension) { }
+    LinearInterpolatedFunction(typename D::P lower, typename D::P upper, R rLower, R rUpper, int dimension) : lower(lower), upper(upper), rLower(rLower), rUpper(rUpper), dimension(dimension) { }
 
-    virtual const Point<DS ...>& getLower() const { return lower; }
-    virtual const Point<DS ...>& getUpper() const { return upper; }
+    virtual const typename D::P& getLower() const { return lower; }
+    virtual const typename D::P& getUpper() const { return upper; }
     virtual R getRLower() const { return rLower; }
     virtual R getRUpper() const { return rUpper; }
     virtual int getDimension() const { return dimension; }
@@ -264,32 +279,32 @@ class INET_API LinearInterpolatedFunction : public FunctionBase<R, DS ...>
     virtual double getB() const { return (toDouble(rLower) * upper.get(dimension) - toDouble(rUpper) * lower.get(dimension)) / (upper.get(dimension) - lower.get(dimension)); }
 
     virtual Interval<R> getRange() const { return Interval<R>(std::min(rLower, rUpper), std::max(rLower, rUpper)); }
-    virtual Interval<DS ...> getDomain() const { return Interval<DS ...>(lower, upper); };
+    virtual typename D::I getDomain() const { return typename D::I(lower, upper); };
 
-    virtual R getValue(const Point<DS ...>& p) const override {
+    virtual R getValue(const typename D::P& p) const override {
         double alpha = (p - lower).get(dimension) / (upper - lower).get(dimension);
         return rLower * (1 - alpha) + rUpper * alpha;
     }
 
-    virtual void partition(const Interval<DS ...>& i, const std::function<void (const Interval<DS ...>&, const IFunction<R, DS ...> *)> f) const override {
+    virtual void partition(const typename D::I& i, const std::function<void (const typename D::I&, const IFunction<R, D> *)> f) const override {
         f(i, this);
     }
 
-    virtual R getMin(const Interval<DS ...>& i) const override {
+    virtual R getMin(const typename D::I& i) const override {
         return std::min(getValue(i.getLower()), getValue(i.getUpper()));
     }
 
-    virtual R getMax(const Interval<DS ...>& i) const override {
+    virtual R getMax(const typename D::I& i) const override {
         return std::max(getValue(i.getLower()), getValue(i.getUpper()));
     }
 
-    virtual R getMean(const Interval<DS ...>& i, int dims = -1) const override {
+    virtual R getMean(const typename D::I& i, int dims = -1) const override {
         return getValue((i.getLower() + i.getUpper()) / 2);
     }
 };
 
 template<typename R, typename X>
-class INET_API OneDimensionalInterpolatedFunction : public FunctionBase<R, X>
+class INET_API OneDimensionalInterpolatedFunction : public FunctionBase<R, Domain<X>>
 {
   protected:
     const std::map<X, std::pair<R, const IInterpolator<X, R> *>> rs;
@@ -319,7 +334,7 @@ class INET_API OneDimensionalInterpolatedFunction : public FunctionBase<R, X>
         }
     }
 
-    virtual void partition(const Interval<X>& i, const std::function<void (const Interval<X>&, const IFunction<R, X> *)> f) const override {
+    virtual void partition(const Interval<X>& i, const std::function<void (const Interval<X>&, const IFunction<R, Domain<X>> *)> f) const override {
         // loop from less or equal than lower to greater or equal than upper inclusive both ends
         auto lt = rs.lower_bound(std::get<0>(i.getLower()));
         auto ut = rs.upper_bound(std::get<0>(i.getUpper()));
@@ -332,20 +347,20 @@ class INET_API OneDimensionalInterpolatedFunction : public FunctionBase<R, X>
             if (isValidInterval(i1)) {
                 const auto interpolator = it->second.second;
                 if (dynamic_cast<const EitherInterpolator<X, R> *>(interpolator)) {
-                    ConstantFunction<R, X> g(it->second.first);
+                    ConstantFunction<R, Domain<X>> g(it->second.first);
                     f(i1, &g);
 
                 }
                 else if (dynamic_cast<const SmallerInterpolator<X, R> *>(interpolator)) {
-                    ConstantFunction<R, X> g(it->second.first); // TODO: what about the ends?
+                    ConstantFunction<R, Domain<X>> g(it->second.first); // TODO: what about the ends?
                     f(i1, &g);
                 }
                 else if (dynamic_cast<const GreaterInterpolator<X, R> *>(interpolator)) {
-                    ConstantFunction<R, X> g(jt->second.first); // TODO: what about the ends?
+                    ConstantFunction<R, Domain<X>> g(jt->second.first); // TODO: what about the ends?
                     f(i1, &g);
                 }
                 else if (dynamic_cast<const LinearInterpolator<X, R> *>(interpolator)) {
-                    LinearInterpolatedFunction<R, X> g(Point<X>(it->first), Point<X>(jt->first), it->second.first, jt->second.first, 0);
+                    LinearInterpolatedFunction<R, Domain<X>> g(Point<X>(it->first), Point<X>(jt->first), it->second.first, jt->second.first, 0);
                     f(i1, &g);
                 }
                 else
@@ -371,37 +386,37 @@ class INET_API OneDimensionalInterpolatedFunction : public FunctionBase<R, X>
 //        throw cRuntimeError("TODO");
 //    }
 //
-//    virtual void partition(const Interval<X, Y>& i, const std::function<void (const Interval<X, Y>&, const IFunction<R, X, Y> *)> f) const override {
+//    virtual void partition(const Interval<X, Y>& i, const std::function<void (const Interval<X, Y>&, const IFunction<R, Domain<X, Y>> *)> f) const override {
 //        throw cRuntimeError("TODO");
 //    }
 //};
 
-//template<typename R, typename D0, typename ... DS>
-//class INET_API FunctionInterpolatingFunction : public Function<R, DS ...>
+//template<typename R, typename D0, typename D>
+//class INET_API FunctionInterpolatingFunction : public Function<R, D>
 //{
 //  protected:
 //    const IInterpolator<R, D0>& i;
-//    const std::map<D0, const IFunction<R, DS ...> *> fs;
+//    const std::map<D0, const IFunction<R, D> *> fs;
 //
 //  public:
-//    FunctionInterpolatingFunction(const IInterpolator<R, D0>& i, const std::map<D0, const IFunction<R, DS ...> *>& fs) : i(i), fs(fs) { }
+//    FunctionInterpolatingFunction(const IInterpolator<R, D0>& i, const std::map<D0, const IFunction<R, D> *>& fs) : i(i), fs(fs) { }
 //
-//    virtual R getValue(const Point<D0, DS ...>& p) const override {
+//    virtual R getValue(const Point<D0, D>& p) const override {
 //        D0 x = std::get<0>(p);
 //        auto lt = fs.lower_bound(x);
 //        auto ut = fs.upper_bound(x);
 //        ASSERT(lt != fs.end() && ut != fs.end());
-//        Point<DS ...> q;
+//        typename D::P q;
 //        return i.get(lt->first, lt->second->getValue(q), ut->first, ut->second->getValue(q), x);
 //    }
 //
-//    virtual void partition(const Interval<D0, DS ...>& i, const std::function<void (const Interval<D0, DS ...>&, const IFunction<R, DS ...> *)> f) const override {
+//    virtual void partition(const Interval<D0, D>& i, const std::function<void (const Interval<D0, D>&, const IFunction<R, D> *)> f) const override {
 //        throw cRuntimeError("TODO");
 //    }
 //};
 
-//template<typename R, typename ... DS>
-//class INET_API GaussFunction : public Function<R, DS ...>
+//template<typename R, typename D>
+//class INET_API GaussFunction : public Function<R, D>
 //{
 //  protected:
 //    const R mean;
@@ -410,55 +425,55 @@ class INET_API OneDimensionalInterpolatedFunction : public FunctionBase<R, X>
 //  public:
 //    GaussFunction(R mean, R stddev) : mean(mean), stddev(stddev) { }
 //
-//    virtual R getValue(const Point<DS ...>& p) const override {
+//    virtual R getValue(const typename D::P& p) const override {
 //        throw cRuntimeError("TODO");
 //    }
 //
-//    virtual void partition(const Interval<DS ...>& i, const std::function<void (const Interval<DS ...>&, const IFunction<R, DS ...> *)> f) const override {
+//    virtual void partition(const typename D::I& i, const std::function<void (const typename D::I&, const IFunction<R, D> *)> f) const override {
 //        throw cRuntimeError("TODO");
 //    }
 //};
 
 template<typename R, typename X, typename Y>
-class INET_API OrthogonalCombinatorFunction : public FunctionBase<R, X, Y>
+class INET_API OrthogonalCombinatorFunction : public FunctionBase<R, Domain<X, Y>>
 {
   protected:
-    const Ptr<const IFunction<R, X>> f;
-    const Ptr<const IFunction<double, Y>> g;
+    const Ptr<const IFunction<R, Domain<X>>> f;
+    const Ptr<const IFunction<double, Domain<Y>>> g;
 
   public:
-    OrthogonalCombinatorFunction(const Ptr<const IFunction<R, X>>& f, const Ptr<const IFunction<double, Y>>& g) : f(f), g(g) { }
+    OrthogonalCombinatorFunction(const Ptr<const IFunction<R, Domain<X>>>& f, const Ptr<const IFunction<double, Domain<Y>>>& g) : f(f), g(g) { }
 
     virtual R getValue(const Point<X, Y>& p) const override {
         return f->getValue(std::get<0>(p)) * g->getValue(std::get<1>(p));
     }
 
-    virtual void partition(const Interval<X, Y>& i, const std::function<void (const Interval<X, Y>&, const IFunction<R, X, Y> *)> h) const override {
+    virtual void partition(const Interval<X, Y>& i, const std::function<void (const Interval<X, Y>&, const IFunction<R, Domain<X, Y>> *)> h) const override {
         Interval<X> ix(Point<X>(std::get<0>(i.getLower())), Point<X>(std::get<0>(i.getUpper())));
         Interval<Y> iy(Point<Y>(std::get<1>(i.getLower())), Point<Y>(std::get<1>(i.getUpper())));
-        f->partition(ix, [&] (const Interval<X>& ixf, const IFunction<R, X> *if1) {
-            g->partition(iy, [&] (const Interval<Y>& iyg, const IFunction<double, Y> *if2) {
+        f->partition(ix, [&] (const Interval<X>& ixf, const IFunction<R, Domain<X>> *if1) {
+            g->partition(iy, [&] (const Interval<Y>& iyg, const IFunction<double, Domain<Y>> *if2) {
                 Point<X, Y> lower(std::get<0>(ixf.getLower()), std::get<0>(iyg.getLower()));
                 Point<X, Y> upper(std::get<0>(ixf.getUpper()), std::get<0>(iyg.getUpper()));
-                if (auto cif1 = dynamic_cast<const ConstantFunction<R, X> *>(if1)) {
-                    if (auto cif2 = dynamic_cast<const ConstantFunction<double, Y> *>(if2)) {
-                        ConstantFunction<R, X, Y> g(cif1->getConstantValue() * cif2->getConstantValue());
+                if (auto cif1 = dynamic_cast<const ConstantFunction<R, Domain<X>> *>(if1)) {
+                    if (auto cif2 = dynamic_cast<const ConstantFunction<double, Domain<Y>> *>(if2)) {
+                        ConstantFunction<R, Domain<X, Y>> g(cif1->getConstantValue() * cif2->getConstantValue());
                         h(Interval<X, Y>(lower, upper), &g);
                     }
-                    else if (auto lif2 = dynamic_cast<const LinearInterpolatedFunction<double, Y> *>(if2)) {
-                        LinearInterpolatedFunction<R, X, Y> g(lower, upper, lif2->getValue(iyg.getLower()) * cif1->getConstantValue(), lif2->getValue(iyg.getUpper()) * cif1->getConstantValue(), 1);
+                    else if (auto lif2 = dynamic_cast<const LinearInterpolatedFunction<double, Domain<Y>> *>(if2)) {
+                        LinearInterpolatedFunction<R, Domain<X, Y>> g(lower, upper, lif2->getValue(iyg.getLower()) * cif1->getConstantValue(), lif2->getValue(iyg.getUpper()) * cif1->getConstantValue(), 1);
                         h(Interval<X, Y>(lower, upper), &g);
                     }
                     else
                         throw cRuntimeError("TODO");
                 }
-                else if (auto lif1 = dynamic_cast<const LinearInterpolatedFunction<R, X> *>(if1)) {
-                    if (auto cif2 = dynamic_cast<const ConstantFunction<double, Y> *>(if2)) {
-                        LinearInterpolatedFunction<R, X, Y> g(lower, upper, lif1->getValue(ixf.getLower()) * cif2->getConstantValue(), lif1->getValue(ixf.getUpper()) * cif2->getConstantValue(), 0);
+                else if (auto lif1 = dynamic_cast<const LinearInterpolatedFunction<R, Domain<X>> *>(if1)) {
+                    if (auto cif2 = dynamic_cast<const ConstantFunction<double, Domain<Y>> *>(if2)) {
+                        LinearInterpolatedFunction<R, Domain<X, Y>> g(lower, upper, lif1->getValue(ixf.getLower()) * cif2->getConstantValue(), lif1->getValue(ixf.getUpper()) * cif2->getConstantValue(), 0);
                         h(Interval<X, Y>(lower, upper), &g);
                     }
                     else {
-                        // QuadraticFunction<double, X, Y> g(); // TODO:
+                        // QuadraticFunction<double, Domain<X, Y>> g(); // TODO:
                         throw cRuntimeError("TODO");
                     }
                 }
@@ -469,39 +484,39 @@ class INET_API OrthogonalCombinatorFunction : public FunctionBase<R, X, Y>
     }
 };
 
-template<typename R, typename ... DS>
-class INET_API ShiftFunction : public FunctionBase<R, DS ...>
+template<typename R, typename D>
+class INET_API ShiftFunction : public FunctionBase<R, D>
 {
   protected:
-    const Ptr<const IFunction<R, DS ...>> f;
-    const Point<DS ...> s;
+    const Ptr<const IFunction<R, D>> f;
+    const typename D::P s;
 
   public:
-    ShiftFunction(const Ptr<const IFunction<R, DS ...>>& f, const Point<DS ...>& s) : f(f), s(s) { }
+    ShiftFunction(const Ptr<const IFunction<R, D>>& f, const typename D::P& s) : f(f), s(s) { }
 
-    virtual R getValue(const Point<DS ...>& p) const override {
+    virtual R getValue(const typename D::P& p) const override {
         return f->getValue(p - s);
     }
 
-    virtual void partition(const Interval<DS ...>& i, const std::function<void (const Interval<DS ...>&, const IFunction<R, DS ...> *)> g) const override {
-        f->partition(Interval<DS ...>(i.getLower() - s, i.getUpper() - s), [&] (const Interval<DS ...>& j, const IFunction<R, DS ...> *jf) {
-            if (auto cjf = dynamic_cast<const ConstantFunction<R, DS ...> *>(jf))
-                g(Interval<DS ...>(j.getLower() + s, j.getUpper() + s), jf);
-            else if (auto ljf = dynamic_cast<const LinearInterpolatedFunction<R, DS ...> *>(jf)) {
-                LinearInterpolatedFunction<R, DS ...> h(j.getLower() + s, j.getUpper() + s, ljf->getValue(j.getLower()), ljf->getValue(j.getUpper()), ljf->getDimension());
-                g(Interval<DS ...>(j.getLower() + s, j.getUpper() + s), &h);
+    virtual void partition(const typename D::I& i, const std::function<void (const typename D::I&, const IFunction<R, D> *)> g) const override {
+        f->partition(typename D::I(i.getLower() - s, i.getUpper() - s), [&] (const typename D::I& j, const IFunction<R, D> *jf) {
+            if (auto cjf = dynamic_cast<const ConstantFunction<R, D> *>(jf))
+                g(typename D::I(j.getLower() + s, j.getUpper() + s), jf);
+            else if (auto ljf = dynamic_cast<const LinearInterpolatedFunction<R, D> *>(jf)) {
+                LinearInterpolatedFunction<R, D> h(j.getLower() + s, j.getUpper() + s, ljf->getValue(j.getLower()), ljf->getValue(j.getUpper()), ljf->getDimension());
+                g(typename D::I(j.getLower() + s, j.getUpper() + s), &h);
             }
             else {
-                ShiftFunction h(const_cast<IFunction<R, DS ...> *>(jf)->shared_from_this(), s);
-                g(Interval<DS ...>(j.getLower() + s, j.getUpper() + s), &h);
+                ShiftFunction h(const_cast<IFunction<R, D> *>(jf)->shared_from_this(), s);
+                g(typename D::I(j.getLower() + s, j.getUpper() + s), &h);
             }
         });
     }
 };
 
 // TODO:
-//template<typename R, typename ... DS>
-//class INET_API QuadraticFunction : public Function<R, DS ...>
+//template<typename R, typename D>
+//class INET_API QuadraticFunction : public Function<R, D>
 //{
 //  protected:
 //    const double a;
@@ -511,17 +526,17 @@ class INET_API ShiftFunction : public FunctionBase<R, DS ...>
 //  public:
 //    QuadraticFunction(double a, double b, double c) : a(a), b(b), c(c) { }
 //
-//    virtual R getValue(const Point<DS ...>& p) const override {
+//    virtual R getValue(const typename D::P& p) const override {
 //        return R(0);
 //    }
 //
-//    virtual void partition(const Interval<DS ...>& i, const std::function<void (const Interval<DS ...>&, const IFunction<R, DS ...> *)> f) const override {
+//    virtual void partition(const typename D::I& i, const std::function<void (const typename D::I&, const IFunction<R, D> *)> f) const override {
 //        throw cRuntimeError("TODO");
 //    }
 //};
 
-template<typename R, typename ... DS>
-class INET_API ReciprocalFunction : public FunctionBase<R, DS ...>
+template<typename R, typename D>
+class INET_API ReciprocalFunction : public FunctionBase<R, D>
 {
   protected:
     // f(x) = (a * x + b) / (c * x + d)
@@ -532,7 +547,7 @@ class INET_API ReciprocalFunction : public FunctionBase<R, DS ...>
     const int dimension;
 
   protected:
-    double getIntegral(const Point<DS ...>& p) const {
+    double getIntegral(const typename D::P& p) const {
         // https://www.wolframalpha.com/input/?i=integrate+(a+*+x+%2B+b)+%2F+(c+*+x+%2B+d)
         double x = p.get(dimension);
         return (a * c * x + (b * c - a * d) * std::log(d + c * x)) / (c * c);
@@ -543,16 +558,16 @@ class INET_API ReciprocalFunction : public FunctionBase<R, DS ...>
 
     virtual int getDimension() const { return dimension; }
 
-    virtual R getValue(const Point<DS ...>& p) const override {
+    virtual R getValue(const typename D::P& p) const override {
         double x = p.get(dimension);
         return R(a * x + b) / (c * x + d);
     }
 
-    virtual void partition(const Interval<DS ...>& i, const std::function<void (const Interval<DS ...>&, const IFunction<R, DS ...> *)> f) const override {
+    virtual void partition(const typename D::I& i, const std::function<void (const typename D::I&, const IFunction<R, D> *)> f) const override {
         f(i, this);
     }
 
-    virtual R getMin(const Interval<DS ...>& i) const override {
+    virtual R getMin(const typename D::I& i) const override {
         double x = -d / c;
         if (i.getLower().get(dimension) < x && x < i.getUpper().get(dimension))
             return getLowerBoundary<R>();
@@ -560,7 +575,7 @@ class INET_API ReciprocalFunction : public FunctionBase<R, DS ...>
             return std::min(getValue(i.getLower()), getValue(i.getUpper()));
     }
 
-    virtual R getMax(const Interval<DS ...>& i) const override {
+    virtual R getMax(const typename D::I& i) const override {
         double x = -d / c;
         if (i.getLower().get(dimension) < x && x < i.getUpper().get(dimension))
             return getUpperBoundary<R>();
@@ -568,49 +583,49 @@ class INET_API ReciprocalFunction : public FunctionBase<R, DS ...>
             return std::max(getValue(i.getLower()), getValue(i.getUpper()));
     }
 
-    virtual R getMean(const Interval<DS ...>& i, int dims = -1) const override {
+    virtual R getMean(const typename D::I& i, int dims = -1) const override {
         return R(getIntegral(i.getUpper()) - getIntegral(i.getLower())) / (i.getUpper().get(dimension) - i.getLower().get(dimension));
     }
 };
 
-template<typename R, typename ... DS>
-class INET_API AdditionFunction : public FunctionBase<R, DS ...>
+template<typename R, typename D>
+class INET_API AdditionFunction : public FunctionBase<R, D>
 {
   protected:
-    const Ptr<const IFunction<R, DS ...>> f1;
-    const Ptr<const IFunction<R, DS ...>> f2;
+    const Ptr<const IFunction<R, D>> f1;
+    const Ptr<const IFunction<R, D>> f2;
 
   public:
-    AdditionFunction(const Ptr<const IFunction<R, DS ...>>& f1, const Ptr<const IFunction<R, DS ...>>& f2) : f1(f1), f2(f2) { }
+    AdditionFunction(const Ptr<const IFunction<R, D>>& f1, const Ptr<const IFunction<R, D>>& f2) : f1(f1), f2(f2) { }
 
-    virtual R getValue(const Point<DS ...>& p) const override {
+    virtual R getValue(const typename D::P& p) const override {
         return f1->getValue(p) + f2->getValue(p);
     }
 
-    virtual void partition(const Interval<DS ...>& i, const std::function<void (const Interval<DS ...>&, const IFunction<R, DS ...> *)> f) const override {
-        f1->partition(i, [&] (const Interval<DS ...>& i1, const IFunction<R, DS ...> *if1) {
-            f2->partition(i1, [&] (const Interval<DS ...>& i2, const IFunction<R, DS ...> *if2) {
+    virtual void partition(const typename D::I& i, const std::function<void (const typename D::I&, const IFunction<R, D> *)> f) const override {
+        f1->partition(i, [&] (const typename D::I& i1, const IFunction<R, D> *if1) {
+            f2->partition(i1, [&] (const typename D::I& i2, const IFunction<R, D> *if2) {
                 // TODO: use template specialization for compile time optimization
-                if (auto cif1 = dynamic_cast<const ConstantFunction<R, DS ...> *>(if1)) {
-                    if (auto cif2 = dynamic_cast<const ConstantFunction<R, DS ...> *>(if2)) {
-                        ConstantFunction<R, DS ...> g(cif1->getConstantValue() + cif2->getConstantValue());
+                if (auto cif1 = dynamic_cast<const ConstantFunction<R, D> *>(if1)) {
+                    if (auto cif2 = dynamic_cast<const ConstantFunction<R, D> *>(if2)) {
+                        ConstantFunction<R, D> g(cif1->getConstantValue() + cif2->getConstantValue());
                         f(i2, &g);
                     }
-                    else if (auto lif2 = dynamic_cast<const LinearInterpolatedFunction<R, DS ...> *>(if2)) {
-                        LinearInterpolatedFunction<R, DS ...> g(i2.getLower(), i2.getUpper(), lif2->getValue(i2.getLower()) + cif1->getConstantValue(), lif2->getValue(i2.getUpper()) + cif1->getConstantValue(), lif2->getDimension());
+                    else if (auto lif2 = dynamic_cast<const LinearInterpolatedFunction<R, D> *>(if2)) {
+                        LinearInterpolatedFunction<R, D> g(i2.getLower(), i2.getUpper(), lif2->getValue(i2.getLower()) + cif1->getConstantValue(), lif2->getValue(i2.getUpper()) + cif1->getConstantValue(), lif2->getDimension());
                         f(i2, &g);
                     }
                     else
                         throw cRuntimeError("TODO");
                 }
-                else if (auto lif1 = dynamic_cast<const LinearInterpolatedFunction<R, DS ...> *>(if1)) {
-                    if (auto cif2 = dynamic_cast<const ConstantFunction<R, DS ...> *>(if2)) {
-                        LinearInterpolatedFunction<R, DS ...> g(i2.getLower(), i2.getUpper(), lif1->getValue(i2.getLower()) + cif2->getConstantValue(), lif1->getValue(i2.getUpper()) + cif2->getConstantValue(), lif1->getDimension());
+                else if (auto lif1 = dynamic_cast<const LinearInterpolatedFunction<R, D> *>(if1)) {
+                    if (auto cif2 = dynamic_cast<const ConstantFunction<R, D> *>(if2)) {
+                        LinearInterpolatedFunction<R, D> g(i2.getLower(), i2.getUpper(), lif1->getValue(i2.getLower()) + cif2->getConstantValue(), lif1->getValue(i2.getUpper()) + cif2->getConstantValue(), lif1->getDimension());
                         f(i2, &g);
                     }
-                    else if (auto lif2 = dynamic_cast<const LinearInterpolatedFunction<R, DS ...> *>(if2)) {
+                    else if (auto lif2 = dynamic_cast<const LinearInterpolatedFunction<R, D> *>(if2)) {
                         ASSERT(lif1->getDimension() == lif2->getDimension());
-                        LinearInterpolatedFunction<R, DS ...> g(i2.getLower(), i2.getUpper(), lif1->getValue(i2.getLower()) + lif2->getValue(i2.getLower()), lif1->getValue(i2.getUpper()) + lif2->getValue(i2.getUpper()), lif1->getDimension());
+                        LinearInterpolatedFunction<R, D> g(i2.getLower(), i2.getUpper(), lif1->getValue(i2.getLower()) + lif2->getValue(i2.getLower()), lif1->getValue(i2.getUpper()) + lif2->getValue(i2.getUpper()), lif1->getDimension());
                         f(i2, &g);
                     }
                     else
@@ -623,43 +638,43 @@ class INET_API AdditionFunction : public FunctionBase<R, DS ...>
     }
 };
 
-template<typename R, typename ... DS>
-class INET_API SubtractionFunction : public FunctionBase<R, DS ...>
+template<typename R, typename D>
+class INET_API SubtractionFunction : public FunctionBase<R, D>
 {
   protected:
-    const Ptr<const IFunction<R, DS ...>> f1;
-    const Ptr<const IFunction<R, DS ...>> f2;
+    const Ptr<const IFunction<R, D>> f1;
+    const Ptr<const IFunction<R, D>> f2;
 
   public:
-    SubtractionFunction(const Ptr<const IFunction<R, DS ...>>& f1, const Ptr<const IFunction<R, DS ...>>& f2) : f1(f1), f2(f2) { }
+    SubtractionFunction(const Ptr<const IFunction<R, D>>& f1, const Ptr<const IFunction<R, D>>& f2) : f1(f1), f2(f2) { }
 
-    virtual R getValue(const Point<DS ...>& p) const override {
+    virtual R getValue(const typename D::P& p) const override {
         return f1->getValue(p) - f2->getValue(p);
     }
 
-    virtual void partition(const Interval<DS ...>& i, const std::function<void (const Interval<DS ...>&, const IFunction<R, DS ...> *)> f) const override {
-        f1->partition(i, [&] (const Interval<DS ...>& i1, const IFunction<R, DS ...> *if1) {
-            f2->partition(i1, [&] (const Interval<DS ...>& i2, const IFunction<R, DS ...> *if2) {
-                if (auto cif1 = dynamic_cast<const ConstantFunction<R, DS ...> *>(if1)) {
-                    if (auto cif2 = dynamic_cast<const ConstantFunction<R, DS ...> *>(if2)) {
-                        ConstantFunction<R, DS ...> g(cif1->getConstantValue() - cif2->getConstantValue());
+    virtual void partition(const typename D::I& i, const std::function<void (const typename D::I&, const IFunction<R, D> *)> f) const override {
+        f1->partition(i, [&] (const typename D::I& i1, const IFunction<R, D> *if1) {
+            f2->partition(i1, [&] (const typename D::I& i2, const IFunction<R, D> *if2) {
+                if (auto cif1 = dynamic_cast<const ConstantFunction<R, D> *>(if1)) {
+                    if (auto cif2 = dynamic_cast<const ConstantFunction<R, D> *>(if2)) {
+                        ConstantFunction<R, D> g(cif1->getConstantValue() - cif2->getConstantValue());
                         f(i2, &g);
                     }
-                    else if (auto lif2 = dynamic_cast<const LinearInterpolatedFunction<R, DS ...> *>(if2)) {
-                        LinearInterpolatedFunction<R, DS ...> g(i2.getLower(), i2.getUpper(), lif2->getValue(i2.getLower()) - cif1->getConstantValue(), lif2->getValue(i2.getUpper()) - cif1->getConstantValue(), lif2->getDimension());
+                    else if (auto lif2 = dynamic_cast<const LinearInterpolatedFunction<R, D> *>(if2)) {
+                        LinearInterpolatedFunction<R, D> g(i2.getLower(), i2.getUpper(), lif2->getValue(i2.getLower()) - cif1->getConstantValue(), lif2->getValue(i2.getUpper()) - cif1->getConstantValue(), lif2->getDimension());
                         f(i2, &g);
                     }
                     else
                         throw cRuntimeError("TODO");
                 }
-                else if (auto lif1 = dynamic_cast<const LinearInterpolatedFunction<R, DS ...> *>(if1)) {
-                    if (auto cif2 = dynamic_cast<const ConstantFunction<R, DS ...> *>(if2)) {
-                        LinearInterpolatedFunction<R, DS ...> g(i2.getLower(), i2.getUpper(), lif1->getValue(i2.getLower()) - cif2->getConstantValue(), lif1->getValue(i2.getUpper()) - cif2->getConstantValue(), lif1->getDimension());
+                else if (auto lif1 = dynamic_cast<const LinearInterpolatedFunction<R, D> *>(if1)) {
+                    if (auto cif2 = dynamic_cast<const ConstantFunction<R, D> *>(if2)) {
+                        LinearInterpolatedFunction<R, D> g(i2.getLower(), i2.getUpper(), lif1->getValue(i2.getLower()) - cif2->getConstantValue(), lif1->getValue(i2.getUpper()) - cif2->getConstantValue(), lif1->getDimension());
                         f(i2, &g);
                     }
-                    else if (auto lif2 = dynamic_cast<const LinearInterpolatedFunction<R, DS ...> *>(if2)) {
+                    else if (auto lif2 = dynamic_cast<const LinearInterpolatedFunction<R, D> *>(if2)) {
                         ASSERT(lif1->getDimension() == lif2->getDimension());
-                        LinearInterpolatedFunction<R, DS ...> g(i2.getLower(), i2.getUpper(), lif1->getValue(i2.getLower()) - lif2->getValue(i2.getLower()), lif1->getValue(i2.getUpper()) - lif2->getValue(i2.getUpper()), lif1->getDimension());
+                        LinearInterpolatedFunction<R, D> g(i2.getLower(), i2.getUpper(), lif1->getValue(i2.getLower()) - lif2->getValue(i2.getLower()), lif1->getValue(i2.getUpper()) - lif2->getValue(i2.getUpper()), lif1->getDimension());
                         f(i2, &g);
                     }
                     else
@@ -672,42 +687,42 @@ class INET_API SubtractionFunction : public FunctionBase<R, DS ...>
     }
 };
 
-template<typename R, typename ... DS>
-class INET_API MultiplicationFunction : public FunctionBase<R, DS ...>
+template<typename R, typename D>
+class INET_API MultiplicationFunction : public FunctionBase<R, D>
 {
   protected:
-    const Ptr<const IFunction<R, DS ...>> f1;
-    const Ptr<const IFunction<double, DS ...>> f2;
+    const Ptr<const IFunction<R, D>> f1;
+    const Ptr<const IFunction<double, D>> f2;
 
   public:
-    MultiplicationFunction(const Ptr<const IFunction<R, DS ...>>& f1, const Ptr<const IFunction<double, DS ...>>& f2) : f1(f1), f2(f2) { }
+    MultiplicationFunction(const Ptr<const IFunction<R, D>>& f1, const Ptr<const IFunction<double, D>>& f2) : f1(f1), f2(f2) { }
 
-    virtual R getValue(const Point<DS ...>& p) const override {
+    virtual R getValue(const typename D::P& p) const override {
         return f1->getValue(p) * f2->getValue(p);
     }
 
-    virtual void partition(const Interval<DS ...>& i, const std::function<void (const Interval<DS ...>&, const IFunction<R, DS ...> *)> f) const override {
-        f1->partition(i, [&] (const Interval<DS ...>& i1, const IFunction<R, DS ...> *if1) {
-            f2->partition(i1, [&] (const Interval<DS ...>& i2, const IFunction<double, DS ...> *if2) {
-                if (auto cif1 = dynamic_cast<const ConstantFunction<R, DS ...> *>(if1)) {
-                    if (auto cif2 = dynamic_cast<const ConstantFunction<double, DS ...> *>(if2)) {
-                        ConstantFunction<R, DS ...> g(cif1->getConstantValue() * cif2->getConstantValue());
+    virtual void partition(const typename D::I& i, const std::function<void (const typename D::I&, const IFunction<R, D> *)> f) const override {
+        f1->partition(i, [&] (const typename D::I& i1, const IFunction<R, D> *if1) {
+            f2->partition(i1, [&] (const typename D::I& i2, const IFunction<double, D> *if2) {
+                if (auto cif1 = dynamic_cast<const ConstantFunction<R, D> *>(if1)) {
+                    if (auto cif2 = dynamic_cast<const ConstantFunction<double, D> *>(if2)) {
+                        ConstantFunction<R, D> g(cif1->getConstantValue() * cif2->getConstantValue());
                         f(i2, &g);
                     }
-                    else if (auto lif2 = dynamic_cast<const LinearInterpolatedFunction<double, DS ...> *>(if2)) {
-                        LinearInterpolatedFunction<R, DS ...> g(i2.getLower(), i2.getUpper(), lif2->getValue(i2.getLower()) * cif1->getConstantValue(), lif2->getValue(i2.getUpper()) * cif1->getConstantValue(), lif2->getDimension());
+                    else if (auto lif2 = dynamic_cast<const LinearInterpolatedFunction<double, D> *>(if2)) {
+                        LinearInterpolatedFunction<R, D> g(i2.getLower(), i2.getUpper(), lif2->getValue(i2.getLower()) * cif1->getConstantValue(), lif2->getValue(i2.getUpper()) * cif1->getConstantValue(), lif2->getDimension());
                         f(i2, &g);
                     }
                     else
                         throw cRuntimeError("TODO");
                 }
-                else if (auto lif1 = dynamic_cast<const LinearInterpolatedFunction<R, DS ...> *>(if1)) {
-                    if (auto cif2 = dynamic_cast<const ConstantFunction<double, DS ...> *>(if2)) {
-                        LinearInterpolatedFunction<R, DS ...> g(i2.getLower(), i2.getUpper(), lif1->getValue(i2.getLower()) * cif2->getConstantValue(), lif1->getValue(i2.getUpper()) * cif2->getConstantValue(), lif1->getDimension());
+                else if (auto lif1 = dynamic_cast<const LinearInterpolatedFunction<R, D> *>(if1)) {
+                    if (auto cif2 = dynamic_cast<const ConstantFunction<double, D> *>(if2)) {
+                        LinearInterpolatedFunction<R, D> g(i2.getLower(), i2.getUpper(), lif1->getValue(i2.getLower()) * cif2->getConstantValue(), lif1->getValue(i2.getUpper()) * cif2->getConstantValue(), lif1->getDimension());
                         f(i2, &g);
                     }
-                    else if (auto lif2 = dynamic_cast<const LinearInterpolatedFunction<double, DS ...> *>(if2)) {
-                        // QuadraticFunction<double, DS ...> g(); // TODO:
+                    else if (auto lif2 = dynamic_cast<const LinearInterpolatedFunction<double, D> *>(if2)) {
+                        // QuadraticFunction<double, D> g(); // TODO:
                         throw cRuntimeError("TODO");
                     }
                     else
@@ -720,43 +735,43 @@ class INET_API MultiplicationFunction : public FunctionBase<R, DS ...>
     }
 };
 
-template<typename R, typename ... DS>
-class INET_API DivisionFunction : public FunctionBase<double, DS ...>
+template<typename R, typename D>
+class INET_API DivisionFunction : public FunctionBase<double, D>
 {
   protected:
-    const Ptr<const IFunction<R, DS ...>> f1;
-    const Ptr<const IFunction<R, DS ...>> f2;
+    const Ptr<const IFunction<R, D>> f1;
+    const Ptr<const IFunction<R, D>> f2;
 
   public:
-    DivisionFunction(const Ptr<const IFunction<R, DS ...>>& f1, const Ptr<const IFunction<R, DS ...>>& f2) : f1(f1), f2(f2) { }
+    DivisionFunction(const Ptr<const IFunction<R, D>>& f1, const Ptr<const IFunction<R, D>>& f2) : f1(f1), f2(f2) { }
 
-    virtual double getValue(const Point<DS ...>& p) const override {
+    virtual double getValue(const typename D::P& p) const override {
         return unit(f1->getValue(p) / f2->getValue(p)).get();
     }
 
-    virtual void partition(const Interval<DS ...>& i, const std::function<void (const Interval<DS ...>&, const IFunction<double, DS ...> *)> f) const override {
-        f1->partition(i, [&] (const Interval<DS ...>& i1, const IFunction<R, DS ...> *if1) {
-            f2->partition(i1, [&] (const Interval<DS ...>& i2, const IFunction<R, DS ...> *if2) {
-                if (auto cif1 = dynamic_cast<const ConstantFunction<R, DS ...> *>(if1)) {
-                    if (auto cif2 = dynamic_cast<const ConstantFunction<R, DS ...> *>(if2)) {
-                        ConstantFunction<double, DS ...> g(unit(cif1->getConstantValue() / cif2->getConstantValue()).get());
+    virtual void partition(const typename D::I& i, const std::function<void (const typename D::I&, const IFunction<double, D> *)> f) const override {
+        f1->partition(i, [&] (const typename D::I& i1, const IFunction<R, D> *if1) {
+            f2->partition(i1, [&] (const typename D::I& i2, const IFunction<R, D> *if2) {
+                if (auto cif1 = dynamic_cast<const ConstantFunction<R, D> *>(if1)) {
+                    if (auto cif2 = dynamic_cast<const ConstantFunction<R, D> *>(if2)) {
+                        ConstantFunction<double, D> g(unit(cif1->getConstantValue() / cif2->getConstantValue()).get());
                         f(i2, &g);
                     }
-                    else if (auto lif2 = dynamic_cast<const LinearInterpolatedFunction<R, DS ...> *>(if2)) {
-                        ReciprocalFunction<double, DS ...> g(0, toDouble(cif1->getConstantValue()), lif2->getA(), lif2->getB(), lif2->getDimension());
+                    else if (auto lif2 = dynamic_cast<const LinearInterpolatedFunction<R, D> *>(if2)) {
+                        ReciprocalFunction<double, D> g(0, toDouble(cif1->getConstantValue()), lif2->getA(), lif2->getB(), lif2->getDimension());
                         f(i2, &g);
                     }
                     else
                         throw cRuntimeError("TODO");
                 }
-                else if (auto lif1 = dynamic_cast<const LinearInterpolatedFunction<R, DS ...> *>(if1)) {
-                    if (auto cif2 = dynamic_cast<const ConstantFunction<R, DS ...> *>(if2)) {
-                        LinearInterpolatedFunction<double, DS ...> g(i2.getLower(), i2.getUpper(), unit(lif1->getValue(i2.getLower()) / cif2->getConstantValue()).get(), unit(lif1->getValue(i2.getUpper()) / cif2->getConstantValue()).get(), lif1->getDimension());
+                else if (auto lif1 = dynamic_cast<const LinearInterpolatedFunction<R, D> *>(if1)) {
+                    if (auto cif2 = dynamic_cast<const ConstantFunction<R, D> *>(if2)) {
+                        LinearInterpolatedFunction<double, D> g(i2.getLower(), i2.getUpper(), unit(lif1->getValue(i2.getLower()) / cif2->getConstantValue()).get(), unit(lif1->getValue(i2.getUpper()) / cif2->getConstantValue()).get(), lif1->getDimension());
                         f(i2, &g);
                     }
-                    else if (auto lif2 = dynamic_cast<const LinearInterpolatedFunction<R, DS ...> *>(if2)) {
+                    else if (auto lif2 = dynamic_cast<const LinearInterpolatedFunction<R, D> *>(if2)) {
                         ASSERT(lif1->getDimension() == lif2->getDimension());
-                        ReciprocalFunction<double, DS ...> g(lif1->getA(), lif1->getB(), lif2->getA(), lif2->getB(), lif2->getDimension());
+                        ReciprocalFunction<double, D> g(lif1->getA(), lif1->getB(), lif2->getA(), lif2->getB(), lif2->getDimension());
                         f(i2, &g);
                     }
                     else
@@ -769,63 +784,63 @@ class INET_API DivisionFunction : public FunctionBase<double, DS ...>
     }
 };
 
-template<typename R, typename ... DS>
-class INET_API SumFunction : public FunctionBase<R, DS ...>
+template<typename R, typename D>
+class INET_API SumFunction : public FunctionBase<R, D>
 {
   protected:
-    std::vector<Ptr<const IFunction<R, DS ...>>> fs;
+    std::vector<Ptr<const IFunction<R, D>>> fs;
 
   public:
     SumFunction() { }
-    SumFunction(const std::vector<Ptr<const IFunction<R, DS ...>>>& fs) : fs(fs) { }
+    SumFunction(const std::vector<Ptr<const IFunction<R, D>>>& fs) : fs(fs) { }
 
-    const std::vector<Ptr<const IFunction<R, DS ...>>>& getElements() const { return fs; }
+    const std::vector<Ptr<const IFunction<R, D>>>& getElements() const { return fs; }
 
-    virtual void addElement(const Ptr<const IFunction<R, DS ...>>& f) {
+    virtual void addElement(const Ptr<const IFunction<R, D>>& f) {
         fs.push_back(f);
     }
 
-    virtual void removeElement(const Ptr<const IFunction<R, DS ...>>& f) {
+    virtual void removeElement(const Ptr<const IFunction<R, D>>& f) {
         fs.erase(std::remove(fs.begin(), fs.end(), f), fs.end());
     }
 
-    virtual R getValue(const Point<DS ...>& p) const override {
+    virtual R getValue(const typename D::P& p) const override {
         R sum = R(0);
         for (auto f : fs)
             sum += f->getValue(p);
         return sum;
     }
 
-    virtual void partition(const Interval<DS ...>& i, const std::function<void (const Interval<DS ...>&, const IFunction<R, DS ...> *)> f) const override {
-        ConstantFunction<R, DS ...> g(R(0));
+    virtual void partition(const typename D::I& i, const std::function<void (const typename D::I&, const IFunction<R, D> *)> f) const override {
+        ConstantFunction<R, D> g(R(0));
         partition(0, i, f, &g);
     }
 
-    virtual void partition(int index, const Interval<DS ...>& i, const std::function<void (const Interval<DS ...>&, const IFunction<R, DS ...> *)> f, const IFunction<R, DS ...> *g) const {
+    virtual void partition(int index, const typename D::I& i, const std::function<void (const typename D::I&, const IFunction<R, D> *)> f, const IFunction<R, D> *g) const {
         if (index == (int)fs.size())
             f(i, g);
         else {
-            fs[index]->partition(i, [&] (const Interval<DS ...>& i1, const IFunction<R, DS ...> *h) {
-                if (auto cg = dynamic_cast<const ConstantFunction<R, DS ...> *>(g)) {
-                    if (auto ch = dynamic_cast<const ConstantFunction<R, DS ...> *>(h)) {
-                        ConstantFunction<R, DS ...> j(cg->getConstantValue() + ch->getConstantValue());
+            fs[index]->partition(i, [&] (const typename D::I& i1, const IFunction<R, D> *h) {
+                if (auto cg = dynamic_cast<const ConstantFunction<R, D> *>(g)) {
+                    if (auto ch = dynamic_cast<const ConstantFunction<R, D> *>(h)) {
+                        ConstantFunction<R, D> j(cg->getConstantValue() + ch->getConstantValue());
                         partition(index + 1, i1, f, &j);
                     }
-                    else if (auto lh = dynamic_cast<const LinearInterpolatedFunction<R, DS ...> *>(h)) {
-                        LinearInterpolatedFunction<R, DS ...> j(i1.getLower(), i1.getUpper(), lh->getValue(i1.getLower()) + cg->getConstantValue(), lh->getValue(i1.getUpper()) + cg->getConstantValue(), lh->getDimension());
+                    else if (auto lh = dynamic_cast<const LinearInterpolatedFunction<R, D> *>(h)) {
+                        LinearInterpolatedFunction<R, D> j(i1.getLower(), i1.getUpper(), lh->getValue(i1.getLower()) + cg->getConstantValue(), lh->getValue(i1.getUpper()) + cg->getConstantValue(), lh->getDimension());
                         partition(index + 1, i1, f, &j);
                     }
                     else
                         throw cRuntimeError("TODO");
                 }
-                else if (auto lg = dynamic_cast<const LinearInterpolatedFunction<R, DS ...> *>(g)) {
-                    if (auto ch = dynamic_cast<const ConstantFunction<R, DS ...> *>(h)) {
-                        LinearInterpolatedFunction<R, DS ...> j(i1.getLower(), i1.getUpper(), lg->getValue(i1.getLower()) + ch->getConstantValue(), lg->getValue(i1.getUpper()) + ch->getConstantValue(), lg->getDimension());
+                else if (auto lg = dynamic_cast<const LinearInterpolatedFunction<R, D> *>(g)) {
+                    if (auto ch = dynamic_cast<const ConstantFunction<R, D> *>(h)) {
+                        LinearInterpolatedFunction<R, D> j(i1.getLower(), i1.getUpper(), lg->getValue(i1.getLower()) + ch->getConstantValue(), lg->getValue(i1.getUpper()) + ch->getConstantValue(), lg->getDimension());
                         partition(index + 1, i1, f, &j);
                     }
-                    else if (auto lh = dynamic_cast<const LinearInterpolatedFunction<R, DS ...> *>(h)) {
+                    else if (auto lh = dynamic_cast<const LinearInterpolatedFunction<R, D> *>(h)) {
                         ASSERT(lg->getDimension() == lh->getDimension());
-                        LinearInterpolatedFunction<R, DS ...> j(i1.getLower(), i1.getUpper(), lg->getValue(i1.getLower()) + lh->getValue(i1.getLower()), lg->getValue(i1.getUpper()) + lh->getValue(i1.getUpper()), lg->getDimension());
+                        LinearInterpolatedFunction<R, D> j(i1.getLower(), i1.getUpper(), lg->getValue(i1.getLower()) + lh->getValue(i1.getLower()), lg->getValue(i1.getUpper()) + lh->getValue(i1.getUpper()), lg->getDimension());
                         partition(index + 1, i1, f, &j);
                     }
                     else

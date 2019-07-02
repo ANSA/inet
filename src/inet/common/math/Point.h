@@ -29,6 +29,20 @@ inline double toDouble(double v) { return v; }
 template<>
 inline double toDouble(simtime_t v) { return v.dbl(); }
 
+template<typename T>
+inline T getLowerBoundary() { return T(-INFINITY); }
+template<>
+inline double getLowerBoundary() { return -INFINITY; }
+template<>
+inline simtime_t getLowerBoundary() { return -SimTime::getMaxTime() / 2; }
+
+template<typename T>
+inline T getUpperBoundary() { return T(INFINITY); }
+template<>
+inline double getUpperBoundary() { return INFINITY; }
+template<>
+inline simtime_t getUpperBoundary() { return SimTime::getMaxTime() / 2; }
+
 template<typename ... T>
 class INET_API Point : public std::tuple<T ...>
 {
@@ -112,21 +126,15 @@ class INET_API Point : public std::tuple<T ...>
     bool operator>=(const Point<T ...>& o) const {
         return *this == o || *this > o;
     }
+
+    static Point<T ...> getLowerBoundaries() {
+        return Point<T ...>{ (getLowerBoundary<T>()) ... };
+    }
+
+    static Point<T ...> getUpperBoundaries() {
+        return Point<T ...>{ (getUpperBoundary<T>()) ... };
+    }
 };
-
-template<typename T>
-inline T getLowerBoundary() { return T(-INFINITY); }
-template<>
-inline double getLowerBoundary() { return -INFINITY; }
-template<>
-inline simtime_t getLowerBoundary() { return -SimTime::getMaxTime() / 2; }
-
-template<typename T>
-inline T getUpperBoundary() { return T(INFINITY); }
-template<>
-inline double getUpperBoundary() { return INFINITY; }
-template<>
-inline simtime_t getUpperBoundary() { return SimTime::getMaxTime() / 2; }
 
 namespace internal {
 
@@ -138,16 +146,6 @@ inline Point<TS ...> tailImpl(index_sequence<NS ...>, const Point<T, TS ...>& p)
 template<typename ... TS1, size_t ... IS1, typename ... TS2, size_t ... IS2>
 inline Point<TS1 ..., TS2 ...> concatImpl(const Point<TS1 ...>& p1, integer_sequence<size_t, IS1 ...>, const Point<TS2 ...>& p2, integer_sequence<size_t, IS2 ...>) {
     return Point<TS1 ..., TS2 ...> { (std::get<IS1>(p1)) ..., (std::get<IS2>(p2)) ... };
-}
-
-template<typename ... T>
-inline Point<T ...> getLowerBoundaries() {
-    return Point<T ...>{ (getLowerBoundary<T>()) ... };
-}
-
-template<typename ... T>
-inline Point<T ...> getUpperBoundaries() {
-    return Point<T ...>{ (getUpperBoundary<T>()) ... };
 }
 
 template<typename ... T, size_t ... IS>
@@ -171,16 +169,6 @@ Point<TS ...> tail(const Point<T, TS ...>& p) {
 template<typename ... TS1, typename ... TS2>
 Point<TS1 ..., TS2 ...> concat(const Point<TS1 ...>& p1, const Point<TS2 ...>& p2) {
     return internal::concatImpl(p1, index_sequence_for<TS1 ...>{}, p2, index_sequence_for<TS2 ...>{});
-}
-
-template<typename ... T>
-inline Point<T ...> getLowerBoundaries() {
-    return internal::getLowerBoundaries<T ...>();
-}
-
-template<typename ... T>
-inline Point<T ...> getUpperBoundaries() {
-    return internal::getUpperBoundaries<T ...>();
 }
 
 template<typename T0>

@@ -150,7 +150,7 @@ void Ieee802154UwbIrTransmitter::generateBurst(std::map<simtime_t, WpHz>& data, 
     }
 }
 
-Ptr<const math::IFunction<WpHz, simtime_t, Hz>> Ieee802154UwbIrTransmitter::generateIEEE802154AUWBSignal(const simtime_t startTime, std::vector<bool> *bits) const
+Ptr<const math::IFunction<WpHz, math::Domain<simtime_t, Hz>>> Ieee802154UwbIrTransmitter::generateIEEE802154AUWBSignal(const simtime_t startTime, std::vector<bool> *bits) const
 {
     // 48 R-S parity bits, the 2 symbols phy header is not modeled as it includes its own parity bits
     // and is thus very robust
@@ -202,7 +202,7 @@ const ITransmission *Ieee802154UwbIrTransmitter::createTransmission(const IRadio
     const Coord endPosition = mobility->getCurrentPosition();
     const Quaternion startOrientation = mobility->getCurrentAngularPosition();
     const Quaternion endOrientation = mobility->getCurrentAngularPosition();
-    const Ptr<const math::IFunction<WpHz, simtime_t, Hz>>& powerFunction = generateIEEE802154AUWBSignal(startTime, bits);
+    const Ptr<const math::IFunction<WpHz, math::Domain<simtime_t, Hz>>>& powerFunction = generateIEEE802154AUWBSignal(startTime, bits);
     return new DimensionalTransmission(transmitter, packet, startTime, endTime, -1, -1, -1, startPosition, endPosition, startOrientation, endOrientation, nullptr, packet->getTotalLength(), b(-1), cfg.centerFrequency, cfg.bandwidth, cfg.bitrate, powerFunction);
 }
 

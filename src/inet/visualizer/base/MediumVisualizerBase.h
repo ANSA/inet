@@ -88,7 +88,7 @@ class INET_API MediumVisualizerBase : public VisualizerBase, public cListener
     double defaultSignalPropagationAnimationSpeed = NaN;
     double defaultSignalTransmissionAnimationSpeed = NaN;
     std::map<const physicallayer::ITransmission *, Ptr<const physicallayer::ReceptionPowerFunction>> receptionPowerFunctions;
-    Ptr<math::SumFunction<WpHz, m, m, m, simtime_t, Hz>> mediumPowerFunction;
+    Ptr<math::SumFunction<WpHz, math::Domain<m, m, m, simtime_t, Hz>>> mediumPowerFunction;
     //@}
 
   protected:

@@ -113,7 +113,7 @@ std::ostream& DimensionalTransmitterBase::printToStream(std::ostream& stream, in
 }
 
 template<typename T>
-const Ptr<const IFunction<double, T>> DimensionalTransmitterBase::normalize(const Ptr<const IFunction<double, T>>& gainFunction, const char *normalization) const
+const Ptr<const IFunction<double, Domain<T>>> DimensionalTransmitterBase::normalize(const Ptr<const IFunction<double, Domain<T>>>& gainFunction, const char *normalization) const
 {
     if (!strcmp("", normalization))
         return gainFunction;
@@ -123,7 +123,7 @@ const Ptr<const IFunction<double, T>> DimensionalTransmitterBase::normalize(cons
         if (max == 1.0)
             return gainFunction;
         else
-            return gainFunction->divide(makeShared<ConstantFunction<double, T>>(max));
+            return gainFunction->divide(makeShared<ConstantFunction<double, Domain<T>>>(max));
     }
     else if (!strcmp("integral", normalization)) {
         double integral = gainFunction->getIntegral();
@@ -131,18 +131,18 @@ const Ptr<const IFunction<double, T>> DimensionalTransmitterBase::normalize(cons
         if (integral == 1.0)
             return gainFunction;
         else
-            return gainFunction->divide(makeShared<ConstantFunction<double, T>>(integral));
+            return gainFunction->divide(makeShared<ConstantFunction<double, Domain<T>>>(integral));
     }
     else
         throw cRuntimeError("Unknown normalization: '%s'", normalization);
 }
 
-Ptr<const IFunction<WpHz, simtime_t, Hz>> DimensionalTransmitterBase::createPowerFunction(const simtime_t startTime, const simtime_t endTime, Hz carrierFrequency, Hz bandwidth, W power) const
+Ptr<const IFunction<WpHz, Domain<simtime_t, Hz>>> DimensionalTransmitterBase::createPowerFunction(const simtime_t startTime, const simtime_t endTime, Hz carrierFrequency, Hz bandwidth, W power) const
 {
     if (timeGains.size() == 0 && frequencyGains.size() == 0)
         return makeShared<TwoDimensionalBoxcarFunction<WpHz, simtime_t, Hz>>(startTime, endTime, carrierFrequency - bandwidth / 2, carrierFrequency + bandwidth / 2, power / bandwidth);
     else {
-        Ptr<const IFunction<double, simtime_t>> timeGainFunction;
+        Ptr<const IFunction<double, Domain<simtime_t>>> timeGainFunction;
         if (timeGains.size() != 0) {
             auto centerTime = (startTime + endTime) / 2;
             auto duration = endTime - startTime;
@@ -157,7 +157,7 @@ Ptr<const IFunction<WpHz, simtime_t, Hz>> DimensionalTransmitterBase::createPowe
         }
         else
             timeGainFunction = makeShared<OneDimensionalBoxcarFunction<double, simtime_t>>(startTime, endTime, 1);
-        Ptr<const IFunction<double, Hz>> frequencyGainFunction;
+        Ptr<const IFunction<double, Domain<Hz>>> frequencyGainFunction;
         if (frequencyGains.size() != 0) {
             auto startFrequency = carrierFrequency - bandwidth / 2;
             auto endFrequency = carrierFrequency + bandwidth / 2;
@@ -173,7 +173,7 @@ Ptr<const IFunction<WpHz, simtime_t, Hz>> DimensionalTransmitterBase::createPowe
         else
             frequencyGainFunction = makeShared<OneDimensionalBoxcarFunction<double, Hz>>(carrierFrequency - bandwidth / 2, carrierFrequency + bandwidth / 2, 1);
         auto gainFunction = makeShared<OrthogonalCombinatorFunction<double, simtime_t, Hz>>(normalize<simtime_t>(timeGainFunction, timeGainsNormalization), normalize<Hz>(frequencyGainFunction, frequencyGainsNormalization));
-        auto powerFunction = makeShared<ConstantFunction<WpHz, simtime_t, Hz>>(power / Hz(1));
+        auto powerFunction = makeShared<ConstantFunction<WpHz, Domain<simtime_t, Hz>>>(power / Hz(1));
         return powerFunction->multiply(gainFunction);
     }
 }
