@@ -130,12 +130,12 @@ void Ieee802154UwbIrTransmitter::generatePulse(std::map<simtime_t, WpHz>& data, 
 {
     ASSERT(polarity == -1 || polarity == +1);
     time += startTime;  // adjust argument so that we use absolute time values in function
-    data[time] = W(0);
+    data[time] = WpHz(0);
     time += chip / 2;
     // Maximum point at symbol half (triangular pulse)
-    data[time] = W(peak * polarity);
+    data[time] = W(peak * polarity) / GHz(10.6 - 3.1);
     time += chip / 2;
-    data[time] = W(0);
+    data[time] = WpHz(0);
 }
 
 void Ieee802154UwbIrTransmitter::generateBurst(std::map<simtime_t, WpHz>& data, simtime_t& time, const simtime_t startTime, const simtime_t burstStart, short /*polarity*/) const
@@ -175,7 +175,7 @@ Ptr<const math::IFunction<WpHz, simtime_t, Hz>> Ieee802154UwbIrTransmitter::gene
         symbolStart = symbolStart + cfg.data_symbol_duration;
     }
     auto timeFunction = makeShared<math::OneDimensionalInterpolatedFunction<WpHz, simtime_t>>(data, &math::LinearInterpolator<simtime_t, WpHz>::singleton);
-    auto frequencyFunction = makeShared<math::OneDimensionalBoxcarFunction<double, Hz>>(GHz(3.1), GHz(10.6), 1 / Hz(GHz(10.6) - GHz(3.1)).get());
+    auto frequencyFunction = makeShared<math::OneDimensionalBoxcarFunction<double, Hz>>(GHz(3.1), GHz(10.6), 1);
     return makeShared<math::OrthogonalCombinatorFunction<WpHz, simtime_t, Hz>>(timeFunction, frequencyFunction);
 }
 

@@ -42,7 +42,7 @@ W DimensionalNoise::computeMinPower(simtime_t startTime, simtime_t endTime) cons
 {
     math::Point<simtime_t, Hz> startPoint(startTime, carrierFrequency - bandwidth / 2);
     math::Point<simtime_t, Hz> endPoint(endTime, carrierFrequency + bandwidth / 2);
-    W minPower = power->getMin(math::Interval<simtime_t, Hz>(startPoint, endPoint));
+    W minPower = power->integrate<0b10, W, simtime_t, Hz>()->getMin(math::Interval<simtime_t, Hz>(startPoint, endPoint));
     EV_DEBUG << "Computing minimum noise power: start = " << startPoint << ", end = " << endPoint << " -> " << minPower << endl;
     return minPower;
 }
@@ -51,7 +51,7 @@ W DimensionalNoise::computeMaxPower(simtime_t startTime, simtime_t endTime) cons
 {
     math::Point<simtime_t, Hz> startPoint(startTime, carrierFrequency - bandwidth / 2);
     math::Point<simtime_t, Hz> endPoint(endTime, carrierFrequency + bandwidth / 2);
-    W maxPower = power->getMax(math::Interval<simtime_t, Hz>(startPoint, endPoint));
+    W maxPower = power->integrate<0b10, W, simtime_t, Hz>()->getMax(math::Interval<simtime_t, Hz>(startPoint, endPoint));
     EV_DEBUG << "Computing maximum noise power: start = " << startPoint << ", end = " << endPoint << " -> " << maxPower << endl;
     return maxPower;
 }
