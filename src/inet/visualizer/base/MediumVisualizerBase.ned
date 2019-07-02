@@ -75,8 +75,8 @@ simple MediumVisualizerBase extends VisualizerBase
         double spectrumMinFrequency @unit(Hz) = default(inf Hz);
         double spectrumMaxFrequency @unit(Hz) = default(-inf Hz);
         bool spectrumAutoPowerAxis = default(true);
-        double spectrumMinPower @unit(dBm) = default(-110 dBm);
-        double spectrumMaxPower @unit(dBm) = default(-inf dBm);
+        double spectrumMinPower @unit(dBmWpMHz) = default(-10 dBmWpMHz);
+        double spectrumMaxPower @unit(dBmWpMHz) = default(-inf dBmWpMHz);
         string spectrumPlacementHint = default("bottomCenter"); // annotation placement hint, space separated list of any, top, bottom, left, right, topLeft, topCenter, topRight, etc. 
         double spectrumPlacementPriority = default(-1); // determines the order of annotation positioning
 

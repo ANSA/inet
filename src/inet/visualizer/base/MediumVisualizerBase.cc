@@ -81,8 +81,8 @@ void MediumVisualizerBase::initialize(int stage)
         spectrumMinFrequency = Hz(par("spectrumMinFrequency"));
         spectrumMaxFrequency = Hz(par("spectrumMaxFrequency"));
         spectrumAutoPowerAxis = par("spectrumAutoPowerAxis");
-        spectrumMinPower = mW(math::dBm2mW(par("spectrumMinPower")));
-        spectrumMaxPower = mW(math::dBm2mW(par("spectrumMaxPower")));
+        spectrumMinPower = WpHz(math::dBmWpMHz2WpHz(par("spectrumMinPower")));
+        spectrumMaxPower = WpHz(math::dBmWpMHz2WpHz(par("spectrumMaxPower")));
         spectrumPlacementHint = parsePlacement(par("spectrumPlacementHint"));
         spectrumPlacementPriority = par("spectrumPlacementPriority");
         mediumPowerFunction = makeShared<math::SumFunction<WpHz, m, m, m, simtime_t, Hz>>();
@@ -193,7 +193,6 @@ void MediumVisualizerBase::handleSignalAdded(const physicallayer::ITransmission 
         mps propagationSpeed = radioMedium->getPropagation()->getPropagationSpeed();
         math::Point<m, m, m> startPosition(m(transmission->getStartPosition().x), m(transmission->getStartPosition().y), m(transmission->getStartPosition().z));
         const auto& startOrientation = transmission->getStartOrientation();
-// this worked for drawing       Hz frequencyQuantization = MHz(100);
         Hz frequencyQuantization = dimensionalTransmission->getBandwidth() / 10;
         const Ptr<const math::IFunction<double, m, m, m, m, m, m, Hz>>& obstacleLossFunction = radioMedium->getObstacleLoss() != nullptr ? makeShared<ObstacleLossFunction>(radioMedium->getObstacleLoss()) : nullptr;
         auto receptionPowerFunction = makeShared<ReceptionPowerFunction>(transmissionPowerFunction, transmitterAntennaGainFunction, pathLossFunction, obstacleLossFunction, startPosition, startOrientation, propagationSpeed, frequencyQuantization);

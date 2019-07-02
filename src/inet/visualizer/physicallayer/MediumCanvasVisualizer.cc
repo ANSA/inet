@@ -107,7 +107,7 @@ void MediumCanvasVisualizer::initialize(int stage)
                     plotFigure->setLineColor(1, cFigure::parseColor("darkred"));
                     plotFigure->setLineColor(2, cFigure::parseColor("darkgreen"));
                     plotFigure->setXAxisLabel("[GHz]");
-                    plotFigure->setYAxisLabel("[dBmW/Hz]");
+                    plotFigure->setYAxisLabel("[dBmW/MHz]");
                     plotFigure->setXValueFormat("%.3f");
                     plotFigure->setYValueFormat("%.0f");
                     plotFigure->setTags("spectrum");
@@ -151,7 +151,7 @@ void MediumCanvasVisualizer::refreshSpectrumFigure(const cModule *module, PlotFi
         if (spectrumAutoFrequencyAxis && dimensionalTransmission != nullptr) {
             dimensionalTransmission->getPower()->partition(dimensionalTransmission->getPower()->getDomain(), [&] (const Interval<simtime_t, Hz>& i, const IFunction<WpHz, simtime_t, Hz> *f) {
                 if (auto constantFunction = dynamic_cast<const ConstantFunction<WpHz, simtime_t, Hz> *>(f)) {
-                    if (constantFunction->getConstantValue() == W(0))
+                    if (constantFunction->getConstantValue() == WpHz(0))
                         return;
                 }
                 nonCostThisPtr->spectrumMinFrequency = std::min(spectrumMinFrequency, std::get<1>(i.getLower()));
@@ -181,10 +181,10 @@ void MediumCanvasVisualizer::refreshSpectrumFigure(const cModule *module, PlotFi
         figure->setXTickCount(3);
         for (Hz frequency = minFrequency; frequency < maxFrequency; frequency += stepFrequency) {
             math::Point<m, m, m, simtime_t, Hz> p(m(position.x), m(position.y), m(position.z), startTime, frequency);
-            W totalPower;
-            W signalPower;
+            WpHz totalPower;
+            WpHz signalPower;
             if (antenna != nullptr && (antenna->getGain()->getMinGain() != 1 || antenna->getGain()->getMaxGain() != 1)) {
-                totalPower = W(0);
+                totalPower = WpHz(0);
                 for (auto f : mediumPowerFunction->getElements()) {
                     auto rf = dynamicPtrCast<const ReceptionPowerFunction>(f);
                     double gain = 1;
@@ -208,26 +208,26 @@ void MediumCanvasVisualizer::refreshSpectrumFigure(const cModule *module, PlotFi
             }
             else {
                 totalPower = mediumPowerFunction->getValue(p);
-                signalPower = receptionPowerFunction != nullptr ? receptionPowerFunction->getValue(p) : W(0);
+                signalPower = receptionPowerFunction != nullptr ? receptionPowerFunction->getValue(p) : WpHz(0);
             }
             if (transmission == nullptr)
-                figure->setValue(0, GHz(frequency).get(), inet::math::mW2dBm(mW(totalPower).get()));
+                figure->setValue(0, GHz(frequency).get(), inet::math::wpHz2dBmWpMHz(WpHz(totalPower).get()));
             else {
-                figure->setValue(1, GHz(frequency).get(), inet::math::mW2dBm(mW(totalPower - signalPower).get()));
-                figure->setValue(2, GHz(frequency).get(), inet::math::mW2dBm(mW(signalPower).get()));
+                figure->setValue(1, GHz(frequency).get(), inet::math::wpHz2dBmWpMHz(WpHz(totalPower - signalPower).get()));
+                figure->setValue(2, GHz(frequency).get(), inet::math::wpHz2dBmWpMHz(WpHz(signalPower).get()));
             }
         }
         math::Point<m, m, m, simtime_t, Hz> lower(m(position.x), m(position.y), m(position.z), startTime, spectrumMinFrequency);
         math::Point<m, m, m, simtime_t, Hz> upper(m(position.x), m(position.y), m(position.z), endTime, spectrumMaxFrequency);
         math::Interval<m, m, m, simtime_t, Hz> interval(lower, upper);
-        W minPower = mediumPowerFunction->getMin(interval);
-        if (minPower > W(0) && spectrumAutoPowerAxis)
+        WpHz minPower = mediumPowerFunction->getMin(interval);
+        if (minPower > WpHz(0) && spectrumAutoPowerAxis)
             nonCostThisPtr->spectrumMinPower = std::min(spectrumMinPower, minPower);
-        W maxPower = mediumPowerFunction->getMax(interval);
-        if (maxPower > W(0) && spectrumAutoPowerAxis)
+        WpHz maxPower = mediumPowerFunction->getMax(interval);
+        if (maxPower > WpHz(0) && spectrumAutoPowerAxis)
             nonCostThisPtr->spectrumMaxPower = std::max(spectrumMaxPower, maxPower);
-        double minValue = inet::math::mW2dBm(mW(spectrumMinPower).get());
-        double maxValue = inet::math::mW2dBm(mW(spectrumMaxPower).get());
+        double minValue = inet::math::wpHz2dBmWpMHz(WpHz(spectrumMinPower).get());
+        double maxValue = inet::math::wpHz2dBmWpMHz(WpHz(spectrumMaxPower).get());
         if (minValue < maxValue) {
             double margin = 0.05 * (maxValue - minValue);
             figure->setMinY(minValue - margin);
