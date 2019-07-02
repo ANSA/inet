@@ -60,7 +60,7 @@ class INET_API DimensionalTransmitterBase : public virtual IPrintableObject
     template<typename T>
     const Ptr<const math::IFunction<double, T>> normalize(const Ptr<const math::IFunction<double, T>>& function, const char *normalization) const;
 
-    virtual Ptr<const math::IFunction<W, simtime_t, Hz>> createPowerFunction(const simtime_t startTime, const simtime_t endTime, Hz carrierFrequency, Hz bandwidth, W power) const;
+    virtual Ptr<const math::IFunction<WpHz, simtime_t, Hz>> createPowerFunction(const simtime_t startTime, const simtime_t endTime, Hz carrierFrequency, Hz bandwidth, W power) const;
 
   public:
     virtual std::ostream& printToStream(std::ostream& stream, int level) const override;

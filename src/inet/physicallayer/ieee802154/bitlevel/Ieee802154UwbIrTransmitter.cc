@@ -87,7 +87,7 @@ simtime_t Ieee802154UwbIrTransmitter::getThdr() const
 	return 0;
 }
 
-void Ieee802154UwbIrTransmitter::generateSyncPreamble(std::map<simtime_t, W>& data, simtime_t& time, const simtime_t startTime) const
+void Ieee802154UwbIrTransmitter::generateSyncPreamble(std::map<simtime_t, WpHz>& data, simtime_t& time, const simtime_t startTime) const
 {
     // NSync repetitions of the Si symbol
     for (short n = 0; n < cfg.NSync; n = n + 1) {
@@ -105,7 +105,7 @@ void Ieee802154UwbIrTransmitter::generateSyncPreamble(std::map<simtime_t, W>& da
     }
 }
 
-void Ieee802154UwbIrTransmitter::generateSFD(std::map<simtime_t, W>& data, simtime_t& time, const simtime_t startTime) const
+void Ieee802154UwbIrTransmitter::generateSFD(std::map<simtime_t, WpHz>& data, simtime_t& time, const simtime_t startTime) const
 {
     const simtime_t sfdStart = cfg.NSync * cfg.sync_symbol_duration;
     for (short n = 0; n < 8; n = n + 1) {
@@ -121,12 +121,12 @@ void Ieee802154UwbIrTransmitter::generateSFD(std::map<simtime_t, W>& data, simti
     }
 }
 
-void Ieee802154UwbIrTransmitter::generatePhyHeader(std::map<simtime_t, W>& data, simtime_t& time, const simtime_t startTime) const
+void Ieee802154UwbIrTransmitter::generatePhyHeader(std::map<simtime_t, WpHz>& data, simtime_t& time, const simtime_t startTime) const
 {
     // not implemented
 }
 
-void Ieee802154UwbIrTransmitter::generatePulse(std::map<simtime_t, W>& data, simtime_t& time, const simtime_t startTime, short polarity, double peak, const simtime_t chip) const
+void Ieee802154UwbIrTransmitter::generatePulse(std::map<simtime_t, WpHz>& data, simtime_t& time, const simtime_t startTime, short polarity, double peak, const simtime_t chip) const
 {
     ASSERT(polarity == -1 || polarity == +1);
     time += startTime;  // adjust argument so that we use absolute time values in function
@@ -138,7 +138,7 @@ void Ieee802154UwbIrTransmitter::generatePulse(std::map<simtime_t, W>& data, sim
     data[time] = W(0);
 }
 
-void Ieee802154UwbIrTransmitter::generateBurst(std::map<simtime_t, W>& data, simtime_t& time, const simtime_t startTime, const simtime_t burstStart, short /*polarity*/) const
+void Ieee802154UwbIrTransmitter::generateBurst(std::map<simtime_t, WpHz>& data, simtime_t& time, const simtime_t startTime, const simtime_t burstStart, short /*polarity*/) const
 {
     // ASSERT(burstStart < cfg.preambleLength + (psduLength * 8 + 48 + 2) * cfg.data_symbol_duration);
     // 1. Start point = zeros
@@ -150,14 +150,14 @@ void Ieee802154UwbIrTransmitter::generateBurst(std::map<simtime_t, W>& data, sim
     }
 }
 
-Ptr<const math::IFunction<W, simtime_t, Hz>> Ieee802154UwbIrTransmitter::generateIEEE802154AUWBSignal(const simtime_t startTime, std::vector<bool> *bits) const
+Ptr<const math::IFunction<WpHz, simtime_t, Hz>> Ieee802154UwbIrTransmitter::generateIEEE802154AUWBSignal(const simtime_t startTime, std::vector<bool> *bits) const
 {
     // 48 R-S parity bits, the 2 symbols phy header is not modeled as it includes its own parity bits
     // and is thus very robust
     unsigned int bitLength = bits->size() + 48;
     // data start time relative to signal->getReceptionStart();
     simtime_t dataStart = cfg.preambleLength; // = Tsync + Tsfd
-    std::map<simtime_t, W> data;
+    std::map<simtime_t, WpHz> data;
     simtime_t time = 0;
 
     generateSyncPreamble(data, time, startTime);
@@ -174,9 +174,9 @@ Ptr<const math::IFunction<W, simtime_t, Hz>> Ieee802154UwbIrTransmitter::generat
         generateBurst(data, time, startTime, burstPos, +1);
         symbolStart = symbolStart + cfg.data_symbol_duration;
     }
-    auto timeFunction = makeShared<math::OneDimensionalInterpolatedFunction<W, simtime_t>>(data, &math::LinearInterpolator<simtime_t, W>::singleton);
+    auto timeFunction = makeShared<math::OneDimensionalInterpolatedFunction<WpHz, simtime_t>>(data, &math::LinearInterpolator<simtime_t, WpHz>::singleton);
     auto frequencyFunction = makeShared<math::OneDimensionalBoxcarFunction<double, Hz>>(GHz(3.1), GHz(10.6), 1 / Hz(GHz(10.6) - GHz(3.1)).get());
-    return makeShared<math::OrthogonalCombinatorFunction<W, simtime_t, Hz>>(timeFunction, frequencyFunction);
+    return makeShared<math::OrthogonalCombinatorFunction<WpHz, simtime_t, Hz>>(timeFunction, frequencyFunction);
 }
 
 const ITransmission *Ieee802154UwbIrTransmitter::createTransmission(const IRadio *transmitter, const Packet *packet, const simtime_t startTime) const
@@ -202,7 +202,7 @@ const ITransmission *Ieee802154UwbIrTransmitter::createTransmission(const IRadio
     const Coord endPosition = mobility->getCurrentPosition();
     const Quaternion startOrientation = mobility->getCurrentAngularPosition();
     const Quaternion endOrientation = mobility->getCurrentAngularPosition();
-    const Ptr<const math::IFunction<W, simtime_t, Hz>>& powerFunction = generateIEEE802154AUWBSignal(startTime, bits);
+    const Ptr<const math::IFunction<WpHz, simtime_t, Hz>>& powerFunction = generateIEEE802154AUWBSignal(startTime, bits);
     return new DimensionalTransmission(transmitter, packet, startTime, endTime, -1, -1, -1, startPosition, endPosition, startOrientation, endOrientation, nullptr, packet->getTotalLength(), b(-1), cfg.centerFrequency, cfg.bandwidth, cfg.bitrate, powerFunction);
 }
 

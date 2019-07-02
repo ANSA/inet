@@ -75,10 +75,10 @@ class INET_API AttenuationFunction : public FunctionBase<double, simtime_t, Hz>
  * This mathematical function provides the transmission signal power for any given
  * space, time, and frequency coordinate vector.
  */
-class INET_API ReceptionPowerFunction : public FunctionBase<W, m, m, m, simtime_t, Hz>
+class INET_API ReceptionPowerFunction : public FunctionBase<WpHz, m, m, m, simtime_t, Hz>
 {
   protected:
-    const Ptr<const IFunction<W, simtime_t, Hz>> transmissionPowerFunction;
+    const Ptr<const IFunction<WpHz, simtime_t, Hz>> transmissionPowerFunction;
     const Ptr<const IFunction<double, Quaternion>> transmitterAntennaGainFunction;
     const Ptr<const IFunction<double, mps, m, Hz>> pathLossFunction;
     const Ptr<const IFunction<double, m, m, m, m, m, m, Hz>> obstacleLossFunction;
@@ -109,12 +109,12 @@ class INET_API ReceptionPowerFunction : public FunctionBase<W, m, m, m, simtime_
     }
 
   public:
-    ReceptionPowerFunction(const Ptr<const IFunction<W, simtime_t, Hz>>& transmissionPowerFunction, const Ptr<const IFunction<double, Quaternion>>& transmitterAntennaGainFunction, const Ptr<const IFunction<double, mps, m, Hz>>& pathLossFunction, const Ptr<const IFunction<double, m, m, m, m, m, m, Hz>>& obstacleLossFunction, const Point<m, m, m> startPosition, const Quaternion startOrientation, const mps propagationSpeed, const Hz frequencyQuantization) :
+    ReceptionPowerFunction(const Ptr<const IFunction<WpHz, simtime_t, Hz>>& transmissionPowerFunction, const Ptr<const IFunction<double, Quaternion>>& transmitterAntennaGainFunction, const Ptr<const IFunction<double, mps, m, Hz>>& pathLossFunction, const Ptr<const IFunction<double, m, m, m, m, m, m, Hz>>& obstacleLossFunction, const Point<m, m, m> startPosition, const Quaternion startOrientation, const mps propagationSpeed, const Hz frequencyQuantization) :
         transmissionPowerFunction(transmissionPowerFunction), transmitterAntennaGainFunction(transmitterAntennaGainFunction), pathLossFunction(pathLossFunction), obstacleLossFunction(obstacleLossFunction), startPosition(startPosition), startOrientation(startOrientation), propagationSpeed(propagationSpeed), frequencyQuantization(frequencyQuantization) { }
 
     virtual const Point<m, m, m>& getStartPosition() const { return startPosition; }
 
-    virtual W getValue(const Point<m, m, m, simtime_t, Hz>& p) const override {
+    virtual WpHz getValue(const Point<m, m, m, simtime_t, Hz>& p) const override {
         m x = std::get<0>(p);
         m y = std::get<1>(p);
         m z = std::get<2>(p);
@@ -128,13 +128,13 @@ class INET_API ReceptionPowerFunction : public FunctionBase<W, m, m, m, simtime_
         Hz frequency = std::get<4>(p);
         m distance = m(sqrt(dx * dx + dy * dy + dz * dz));
         if (std::isinf(distance.get()))
-            return W(0);
+            return WpHz(0);
         simtime_t propagationTime = s(distance / propagationSpeed).get();
-        W transmissionPower = transmissionPowerFunction->getValue(Point<simtime_t, Hz>(time - propagationTime, frequency));
+        WpHz transmissionPower = transmissionPowerFunction->getValue(Point<simtime_t, Hz>(time - propagationTime, frequency));
         return transmissionPower * getAttenuation(p);
     }
 
-    virtual void partition(const Interval<m, m, m, simtime_t, Hz>& i, const std::function<void (const Interval<m, m, m, simtime_t, Hz>&, const IFunction<W, m, m, m, simtime_t, Hz> *)> f) const override {
+    virtual void partition(const Interval<m, m, m, simtime_t, Hz>& i, const std::function<void (const Interval<m, m, m, simtime_t, Hz>&, const IFunction<WpHz, m, m, m, simtime_t, Hz> *)> f) const override {
         const auto& lower = i.getLower();
         const auto& upper = i.getUpper();
         if (std::get<0>(lower) == std::get<0>(upper) && std::get<1>(lower) == std::get<1>(upper) && std::get<2>(lower) == std::get<2>(upper)) {
@@ -157,16 +157,16 @@ class INET_API ReceptionPowerFunction : public FunctionBase<W, m, m, m, simtime_
                 Interval<simtime_t, Hz> i1(l1, u1);
                 double attenuation = getAttenuation(Point<m, m, m, simtime_t, Hz>(std::get<0>(lower), std::get<1>(lower), std::get<2>(lower), std::get<3>(lower), frequency));
                 if (isValidInterval(i1)) {
-                    transmissionPowerFunction->partition(i1, [&] (const Interval<simtime_t, Hz>& i2, const IFunction<W, simtime_t, Hz> *g) {
+                    transmissionPowerFunction->partition(i1, [&] (const Interval<simtime_t, Hz>& i2, const IFunction<WpHz, simtime_t, Hz> *g) {
                         Interval<m, m, m, simtime_t, Hz> i3(
                             Point<m, m, m, simtime_t, Hz>(std::get<0>(lower), std::get<1>(lower), std::get<2>(lower), std::get<0>(i2.getLower()) + propagationTime, std::get<1>(i2.getLower())),
                             Point<m, m, m, simtime_t, Hz>(std::get<0>(upper), std::get<1>(upper), std::get<2>(upper), std::get<0>(i2.getUpper()) + propagationTime, std::get<1>(i2.getUpper())));
-                        if (auto cg = dynamic_cast<const ConstantFunction<W, simtime_t, Hz> *>(g)) {
-                            ConstantFunction<W, m, m, m, simtime_t, Hz> h(cg->getConstantValue() * attenuation);
+                        if (auto cg = dynamic_cast<const ConstantFunction<WpHz, simtime_t, Hz> *>(g)) {
+                            ConstantFunction<WpHz, m, m, m, simtime_t, Hz> h(cg->getConstantValue() * attenuation);
                             f(i3, &h);
                         }
-                        else if (auto lg = dynamic_cast<const LinearInterpolatedFunction<W, simtime_t, Hz> *>(g)) {
-                            LinearInterpolatedFunction<W, m, m, m, simtime_t, Hz> h(i3.getLower(), i3.getUpper(), lg->getValue(i2.getLower()) * attenuation, lg->getValue(i2.getUpper()) * attenuation, lg->getDimension() + 3);
+                        else if (auto lg = dynamic_cast<const LinearInterpolatedFunction<WpHz, simtime_t, Hz> *>(g)) {
+                            LinearInterpolatedFunction<WpHz, m, m, m, simtime_t, Hz> h(i3.getLower(), i3.getUpper(), lg->getValue(i2.getLower()) * attenuation, lg->getValue(i2.getUpper()) * attenuation, lg->getDimension() + 3);
                             f(i3, &h);
                         }
                         else

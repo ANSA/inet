@@ -20,7 +20,7 @@
 namespace inet {
 namespace physicallayer {
 
-DimensionalSignalAnalogModel::DimensionalSignalAnalogModel(const simtime_t duration, Hz carrierFrequency, Hz bandwidth, const Ptr<const math::IFunction<W, simtime_t, Hz>>& power) :
+DimensionalSignalAnalogModel::DimensionalSignalAnalogModel(const simtime_t duration, Hz carrierFrequency, Hz bandwidth, const Ptr<const math::IFunction<WpHz, simtime_t, Hz>>& power) :
     NarrowbandSignalAnalogModel(duration, carrierFrequency, bandwidth),
     power(power)
 {
@@ -46,12 +46,12 @@ W DimensionalSignalAnalogModel::computeMinPower(simtime_t startTime, simtime_t e
     return minPower;
 }
 
-DimensionalTransmissionSignalAnalogModel::DimensionalTransmissionSignalAnalogModel(const simtime_t duration, Hz carrierFrequency, Hz bandwidth, const Ptr<const math::IFunction<W, simtime_t, Hz>>& power) :
+DimensionalTransmissionSignalAnalogModel::DimensionalTransmissionSignalAnalogModel(const simtime_t duration, Hz carrierFrequency, Hz bandwidth, const Ptr<const math::IFunction<WpHz, simtime_t, Hz>>& power) :
     DimensionalSignalAnalogModel(duration, carrierFrequency, bandwidth, power)
 {
 }
 
-DimensionalReceptionSignalAnalogModel::DimensionalReceptionSignalAnalogModel(const simtime_t duration, Hz carrierFrequency, Hz bandwidth, const Ptr<const math::IFunction<W, simtime_t, Hz>>& power) :
+DimensionalReceptionSignalAnalogModel::DimensionalReceptionSignalAnalogModel(const simtime_t duration, Hz carrierFrequency, Hz bandwidth, const Ptr<const math::IFunction<WpHz, simtime_t, Hz>>& power) :
     DimensionalSignalAnalogModel(duration, carrierFrequency, bandwidth, power)
 {
 }

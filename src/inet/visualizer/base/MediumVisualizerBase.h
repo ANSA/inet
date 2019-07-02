@@ -77,8 +77,8 @@ class INET_API MediumVisualizerBase : public VisualizerBase, public cListener
     Hz spectrumMinFrequency = Hz(NaN);
     Hz spectrumMaxFrequency = Hz(NaN);
     bool spectrumAutoPowerAxis = false;
-    W spectrumMinPower = W(NaN);
-    W spectrumMaxPower = W(NaN);
+    WpHz spectrumMinPower = WpHz(NaN);
+    WpHz spectrumMaxPower = WpHz(NaN);
     Placement spectrumPlacementHint;
     double spectrumPlacementPriority;
     //@}
@@ -88,7 +88,7 @@ class INET_API MediumVisualizerBase : public VisualizerBase, public cListener
     double defaultSignalPropagationAnimationSpeed = NaN;
     double defaultSignalTransmissionAnimationSpeed = NaN;
     std::map<const physicallayer::ITransmission *, Ptr<const physicallayer::ReceptionPowerFunction>> receptionPowerFunctions;
-    Ptr<math::SumFunction<W, m, m, m, simtime_t, Hz>> mediumPowerFunction;
+    Ptr<math::SumFunction<WpHz, m, m, m, simtime_t, Hz>> mediumPowerFunction;
     //@}
 
   protected:

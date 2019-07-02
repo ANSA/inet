@@ -21,7 +21,7 @@ namespace inet {
 
 namespace physicallayer {
 
-DimensionalNoise::DimensionalNoise(simtime_t startTime, simtime_t endTime, Hz carrierFrequency, Hz bandwidth, const Ptr<const math::IFunction<W, simtime_t, Hz>>& power) :
+DimensionalNoise::DimensionalNoise(simtime_t startTime, simtime_t endTime, Hz carrierFrequency, Hz bandwidth, const Ptr<const math::IFunction<WpHz, simtime_t, Hz>>& power) :
     NarrowbandNoiseBase(startTime, endTime, carrierFrequency, bandwidth),
     power(power)
 {

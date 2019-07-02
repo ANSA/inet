@@ -21,7 +21,7 @@ namespace inet {
 
 namespace physicallayer {
 
-DimensionalReception::DimensionalReception(const IRadio *radio, const ITransmission *transmission, const simtime_t startTime, const simtime_t endTime, const Coord startPosition, const Coord endPosition, const Quaternion startOrientation, const Quaternion endOrientation, Hz carrierFrequency, Hz bandwidth, const Ptr<const math::IFunction<W, simtime_t, Hz>>& power) :
+DimensionalReception::DimensionalReception(const IRadio *radio, const ITransmission *transmission, const simtime_t startTime, const simtime_t endTime, const Coord startPosition, const Coord endPosition, const Quaternion startOrientation, const Quaternion endOrientation, Hz carrierFrequency, Hz bandwidth, const Ptr<const math::IFunction<WpHz, simtime_t, Hz>>& power) :
     FlatReceptionBase(radio, transmission, startTime, endTime, startPosition, endPosition, startOrientation, endOrientation, carrierFrequency, bandwidth),
     power(power)
 {

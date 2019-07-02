@@ -155,7 +155,7 @@ std::pair<double, double> Ieee802154UwbIrReceiver::integrateWindow(simtime_t_cre
         double vThermalNoise    = 0; // thermal noise realization
         // consider signal power
         const DimensionalReception *dimensionalSignalReception = check_and_cast<const DimensionalReception *>(reception);
-        const Ptr<const math::IFunction<W, simtime_t, Hz>>& signalPower = dimensionalSignalReception->getPower();
+        const Ptr<const math::IFunction<WpHz, simtime_t, Hz>>& signalPower = dimensionalSignalReception->getPower();
         math::Interval<simtime_t, Hz> interval(math::Point<simtime_t, Hz>(now, Hz(3.1)), math::Point<simtime_t, Hz>(now, Hz(10.6)));
         double measure = signalPower->getMean(interval, 0b01).get() * peakPulsePower; //TODO: de-normalize (peakPulsePower should be in AirFrame or in Signal, to be set at run-time)
         signalValue = measure * 0.5; // we capture half of the maximum possible pulse energy to account for self  interference
@@ -163,7 +163,7 @@ std::pair<double, double> Ieee802154UwbIrReceiver::integrateWindow(simtime_t_cre
         // consider all interferers at this point in time
         for (const auto & interferingReception : *interferingReceptions) {
             const DimensionalReception *dimensionalInterferingReception = check_and_cast<const DimensionalReception *>(interferingReception);
-            const Ptr<const math::IFunction<W, simtime_t, Hz>>& interferingPower = dimensionalInterferingReception->getPower();
+            const Ptr<const math::IFunction<WpHz, simtime_t, Hz>>& interferingPower = dimensionalInterferingReception->getPower();
             double measure = interferingPower->getMean(interval, 0b01).get() * peakPulsePower; //TODO: de-normalize (peakPulsePower should be in AirFrame or in Signal, to be set at run-time)
 //          measure = measure * uniform(0, +1); // random point of Efield at sampling (due to pulse waveform and self interference)
             // take a random point within pulse envelope for interferer

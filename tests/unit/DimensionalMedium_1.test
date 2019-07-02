@@ -32,7 +32,7 @@ void DimensionalMediumTest::test1()
 
     parseTimeGains("smaller s 0dB either e 0dB greater");
 
-    auto backgroundNoise = makeShared<ConstantFunction<W, m, m, m, simtime_t, Hz>>(pW(1));
+    auto backgroundNoise = makeShared<ConstantFunction<WpHz, m, m, m, simtime_t, Hz>>(pW(1));
     std::cout << "Background noise: " << *backgroundNoise << std::endl;
 
     auto transmissionFunction1 = createPowerFunction(0, 20, GHz(1), MHz(20), mW(100));
@@ -45,7 +45,7 @@ void DimensionalMediumTest::test1()
     auto receptionFunction2 = makeShared<ReceptionPowerFunction>(transmissionFunction2, transmitterAntennaGainFunction, pathLossFunction, obstacleLossFunction, Point<m, m, m>(m(-10), m(0), m(0)), Quaternion(), propagationSpeed, MHz(1));
     //std::cout << "Reception 2: " << *receptionFunction2 << std::endl;
 
-    auto interferenceFunction = makeShared<SumFunction<W, m, m, m, simtime_t, Hz>>(std::vector<Ptr<const IFunction<W, m, m, m, simtime_t, Hz>>>({backgroundNoise, receptionFunction2}));
+    auto interferenceFunction = makeShared<SumFunction<WpHz, m, m, m, simtime_t, Hz>>(std::vector<Ptr<const IFunction<WpHz, m, m, m, simtime_t, Hz>>>({backgroundNoise, receptionFunction2}));
 
     auto snirFunction = receptionFunction1->divide(interferenceFunction);
     //std::cout << "SNIR: " << *snirFunction << std::endl;

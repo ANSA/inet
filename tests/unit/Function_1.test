@@ -19,15 +19,15 @@ class FunctionTest
 
 void FunctionTest::test1()
 {
-    auto backgroundNoise = makeShared<ConstantFunction<W, simtime_t, Hz>>(W(10));
+    auto backgroundNoise = makeShared<ConstantFunction<WpHz, simtime_t, Hz>>(W(10));
     std::cout << "Background noise: " << *backgroundNoise << std::endl;
-    auto transmission = makeShared<TwoDimensionalBoxcarFunction<W, simtime_t, Hz>>(10, 30, GHz(0.9), GHz(1.1), W(100));
+    auto transmission = makeShared<TwoDimensionalBoxcarFunction<WpHz, simtime_t, Hz>>(10, 30, GHz(0.9), GHz(1.1), W(100));
     std::cout << "Transmission: " << *transmission << std::endl;
     auto propagation = Point<simtime_t, Hz> (10, Hz(0));
     std::cout << "Propagation: " << propagation << std::endl;
     auto attenuation = makeShared<ConstantFunction<double, simtime_t, Hz>>(0.5);
     std::cout << "Attenuation: " << *attenuation << std::endl;
-    auto propagatedTransmission = makeShared<ShiftFunction<W, simtime_t, Hz>>(transmission, propagation);
+    auto propagatedTransmission = makeShared<ShiftFunction<WpHz, simtime_t, Hz>>(transmission, propagation);
     auto reception = propagatedTransmission->multiply(attenuation);
     std::cout << "Reception: " << *reception << std::endl;
     auto snir = reception->divide(backgroundNoise);

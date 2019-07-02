@@ -91,7 +91,7 @@ class INET_API IScalarSignal
 class INET_API IDimensionalSignal
 {
   public:
-    virtual const Ptr<const math::IFunction<W, simtime_t, Hz>>& getPower() const = 0;
+    virtual const Ptr<const math::IFunction<WpHz, simtime_t, Hz>>& getPower() const = 0;
 };
 
 } // namespace physicallayer

@@ -137,7 +137,7 @@ const Ptr<const IFunction<double, T>> DimensionalTransmitterBase::normalize(cons
         throw cRuntimeError("Unknown normalization: '%s'", normalization);
 }
 
-Ptr<const IFunction<W, simtime_t, Hz>> DimensionalTransmitterBase::createPowerFunction(const simtime_t startTime, const simtime_t endTime, Hz carrierFrequency, Hz bandwidth, W power) const
+Ptr<const IFunction<WpHz, simtime_t, Hz>> DimensionalTransmitterBase::createPowerFunction(const simtime_t startTime, const simtime_t endTime, Hz carrierFrequency, Hz bandwidth, W power) const
 {
     if (timeGains.size() == 0 && frequencyGains.size() == 0)
         return makeShared<TwoDimensionalBoxcarFunction<W, simtime_t, Hz>>(startTime, endTime, carrierFrequency - bandwidth / 2, carrierFrequency + bandwidth / 2, power);
