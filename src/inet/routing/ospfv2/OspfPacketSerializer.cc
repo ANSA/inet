@@ -324,9 +324,7 @@ void OspfPacketSerializer::serializeRouterLsa(MemoryOutputStream& stream, const 
         for(uint32_t j = 0; j < numTos; j++) {
             const TosData& tos = link.getTosData(j);
             stream.writeUint8(tos.tos);
-            stream.writeUint8(tos.tosMetric[0]);
-            stream.writeUint8(tos.tosMetric[1]);
-            stream.writeUint8(tos.tosMetric[2]);
+            stream.writeUint24Be(tos.tosMetric);
         }
     }
 }
@@ -349,12 +347,10 @@ bool OspfPacketSerializer::decerializeRouterLsa(MemoryInputStream& stream, OspfR
         uint8_t numTos = stream.readUint8();
         link->setLinkCost(stream.readUint16Be());
         for(uint32_t j = 0; j < numTos; j++) {
-            auto tos = new TosData();
-            tos->tos = stream.readUint8();
-            tos->tosMetric[0] = stream.readUint8();
-            tos->tosMetric[1] = stream.readUint8();
-            tos->tosMetric[2] = stream.readUint8();
-            link->setTosData(j, *tos);
+            TosData tos;
+            tos.tos = stream.readUint8();
+            tos.tosMetric = stream.readUint24Be();
+            link->setTosData(j, tos);
         }
         routerLsa->setLinks(i, *link);
         linksSize += OSPF_LINK_HEADER_LENGTH + B(numTos * OSPF_TOS_LENGTH.get());
@@ -398,9 +394,7 @@ void OspfPacketSerializer::serializeSummaryLsa(MemoryOutputStream& stream, const
     for(uint32_t i = 0; i < summaryLsa.getTosDataArraySize(); i++) {
         const TosData& tos = summaryLsa.getTosData(i);
         stream.writeUint8(tos.tos);
-        stream.writeUint8(tos.tosMetric[0]);
-        stream.writeUint8(tos.tosMetric[1]);
-        stream.writeUint8(tos.tosMetric[2]);
+        stream.writeUint24Be(tos.tosMetric);
     }
 }
 
@@ -417,9 +411,7 @@ bool OspfPacketSerializer::decerializeSummaryLsa(MemoryInputStream& stream, Ospf
     for(int i = 0; i < numTos; i++) {
         auto tos = new TosData();
         tos->tos = stream.readUint8();
-        tos->tosMetric[0] = stream.readUint8();
-        tos->tosMetric[1] = stream.readUint8();
-        tos->tosMetric[2] = stream.readUint8();
+        tos->tosMetric = stream.readUint24Be();
         summaryLsa->setTosData(i, *tos);
     }
 
@@ -472,9 +464,7 @@ bool OspfPacketSerializer::decerializeAsExternalLsa(MemoryInputStream& stream, O
 
         TosData tos;
         tos.tos = stream.readUint8();
-        tos.tosMetric[0] = stream.readUint8();
-        tos.tosMetric[1] = stream.readUint8();
-        tos.tosMetric[2] = stream.readUint8();
+        tos.tosMetric = stream.readUint24Be();
         extTos->tosData = tos;
 
         extTos->E_ExternalMetricType = ((tos.tos & (1 << 7)) != 0);
