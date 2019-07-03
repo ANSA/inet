@@ -39,9 +39,9 @@ std::ostream& DimensionalSignalAnalogModel::printToStream(std::ostream& stream, 
 
 W DimensionalSignalAnalogModel::computeMinPower(simtime_t startTime, simtime_t endTime) const
 {
-    math::Point<simtime_t, Hz> startPoint(startTime, carrierFrequency - bandwidth / 2);
-    math::Point<simtime_t, Hz> endPoint(endTime, carrierFrequency + bandwidth / 2);
-    W minPower = power->integrate<0b10, W, math::Domain<simtime_t, Hz>>()->getMin(math::Interval<simtime_t, Hz>(startPoint, endPoint));
+    math::Point<simtime_t> startPoint(startTime);
+    math::Point<simtime_t> endPoint(endTime);
+    W minPower = math::integrate<WpHz, math::Domain<simtime_t, Hz>, 0b10, W, math::Domain<simtime_t>>(power)->getMin(math::Interval<simtime_t>(startPoint, endPoint));
     EV_DEBUG << "Computing minimum reception power: start = " << startPoint << ", end = " << endPoint << " -> minimum reception power = " << minPower << endl;
     return minPower;
 }

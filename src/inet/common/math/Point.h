@@ -43,9 +43,37 @@ inline double getUpperBoundary() { return INFINITY; }
 template<>
 inline simtime_t getUpperBoundary() { return SimTime::getMaxTime() / 2; }
 
+template<typename S, size_t ... SIS, typename D, size_t ... DIS>
+void copyTupleElements(const S& source, integer_sequence<size_t, SIS ...>, D& destination, integer_sequence<size_t, DIS ...>) {
+    std::initializer_list<double> b{ toDouble(std::get<DIS>(destination) = std::get<SIS>(source)) ...};
+    (void)b;
+}
+
+template<int DIMS, int SIZE>
+struct bitsToIndices { };
+
+template<>
+struct bitsToIndices<0b0, 0> { typedef integer_sequence<size_t> type; };
+
+template<>
+struct bitsToIndices<0b0, 1> { typedef integer_sequence<size_t> type; };
+
+template<>
+struct bitsToIndices<0b00, 2> { typedef integer_sequence<size_t, 0> type; };
+template<>
+struct bitsToIndices<0b01, 2> { typedef integer_sequence<size_t, 1> type; };
+template<>
+struct bitsToIndices<0b10, 2> { typedef integer_sequence<size_t, 0> type; };
+
+template<int DIMS, int SIZE>
+using make_bits_to_indices = typename bitsToIndices<DIMS, SIZE>::type;
+
 template<typename ... T>
 class INET_API Point : public std::tuple<T ...>
 {
+  public:
+    typedef std::tuple<T ...> type;
+
   protected:
     template<size_t ... IS>
     double getImpl(int index, integer_sequence<size_t, IS...>) const {
@@ -125,6 +153,20 @@ class INET_API Point : public std::tuple<T ...>
 
     bool operator>=(const Point<T ...>& o) const {
         return *this == o || *this > o;
+    }
+
+    template<typename P, int DIMS>
+    void copyTo(P& p) const {
+        copyTupleElements(*this, index_sequence_for<T ...>{}, p, make_bits_to_indices<DIMS, std::tuple_size<typename P::type>::value>{});
+    }
+
+    template<typename P, int DIMS>
+    void copyFrom(const P& p) {
+        copyTupleElements(p, make_bits_to_indices<DIMS, std::tuple_size<typename P::type>::value>{}, *this, index_sequence_for<T ...>{});
+    }
+
+    static Point<T ...> getZero() {
+        return Point<T ...>{ T(0) ... };
     }
 
     static Point<T ...> getLowerBoundaries() {

@@ -236,6 +236,9 @@ class INET_API AntennaGainFunction : public IFunction<double, Domain<Quaternion>
         throw cRuntimeError("TODO");
     }
 
+    template<int DIMS, typename RI, typename DI>
+    Ptr<const IFunction<RI, DI>> integrate() const { throw cRuntimeError("TODO"); }
+
     virtual Interval<double> getRange() const { throw cRuntimeError("TODO"); }
     virtual Interval<Quaternion> getDomain() const { throw cRuntimeError("TODO"); }
     virtual Ptr<const IFunction<double, Domain<Quaternion>>> limitDomain(const Interval<Quaternion>& i) const { throw cRuntimeError("TODO"); }

@@ -29,16 +29,12 @@ namespace math {
  * This class represents the domain of a mathematical function.
  */
 template<typename ... T>
-class Domain : public std::tuple<T ...>
+class Domain
 {
   public:
     typedef Point<T ...> P;
     typedef Interval<T ...> I;
-
-  public:
-    Domain(T ... t) : std::tuple<T ...>(t ...) { }
 };
-
 
 /**
  * This interface represents a mathematical function from domain D to range R.
@@ -75,18 +71,9 @@ class INET_API IFunction :
 
     /**
      * Subdivides the provided domain and calls back the provided function with
-     * the subdomains and the corresponding potentially simpler domain limited function.
+     * the subdomains and the corresponding potentially simpler domain limited functions.
      */
     virtual void partition(const typename D::I& i, const std::function<void (const typename D::I&, const IFunction<R, D> *)> f) const = 0;
-
-    /**
-     * Returns a function that represents the same function as this limited to
-     * the given domain.
-     */
-    virtual Ptr<const IFunction<R, D>> limitDomain(const typename D::I& i) const = 0;
-
-    template<int DIMS, typename RI, typename DI>
-    Ptr<const IFunction<RI, DI>> integrate() const;
 
     /**
      * Returns the minimum value for the whole domain.
@@ -149,20 +136,18 @@ class INET_API IFunction :
     virtual const Ptr<const IFunction<double, D>> divide(const Ptr<const IFunction<R, D>>& o) const = 0;
 };
 
-template<typename R, typename D>
-inline std::ostream& operator<<(std::ostream& os, const IFunction<R, D>& f)
+template<typename R, typename ... T>
+inline std::ostream& operator<<(std::ostream& os, const IFunction<R, Domain<T ...> >& f)
 {
-    // TODO:
-//    os << "f {" << std::endl;
-//    f.partition(f.getDomain(), [&] (const typename D::I& i, const IFunction<R, D> *g) {
-//        os << "  i " << i << " -> { ";
-//        iterateBoundaries<typename D::I>(i, std::function<void (const typename D::P&)>([&] (const typename D::P& p) {
-//            os << "@" << p << " = " << f.getValue(p) << ", ";
-//        }));
-//        os << "min = " << g->getMin(i) << ", max = " << g->getMax(i) << ", mean = " << g->getMean(i) << " }" << std::endl;
-//    });
-//    return os << "} min = " << f.getMin() << ", max = " << f.getMax() << ", mean = " << f.getMean();
-    return os;
+    os << "f {" << std::endl;
+    f.partition(f.getDomain(), [&] (const Interval<T ...>& i, const IFunction<R, Domain<T ...>> *g) {
+        os << "  i " << i << " -> { ";
+        iterateBoundaries<T ...>(i, std::function<void (const Point<T ...>&)>([&] (const Point<T ...>& p) {
+            os << "@" << p << " = " << f.getValue(p) << ", ";
+        }));
+        os << "min = " << g->getMin(i) << ", max = " << g->getMax(i) << ", mean = " << g->getMean(i) << " }" << std::endl;
+    });
+    return os << "} min = " << f.getMin() << ", max = " << f.getMax() << ", mean = " << f.getMean();
 }
 
 } // namespace math

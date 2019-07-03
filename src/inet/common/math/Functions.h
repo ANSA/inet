@@ -29,7 +29,7 @@ using namespace inet::units::values;
 template<typename R, typename D>
 class INET_API DomainLimitedFunction;
 
-template<typename R, typename D>
+template<typename R, typename D, int DIMS, typename RI, typename DI>
 class INET_API IntegratedFunction;
 
 template<typename R, typename D>
@@ -54,15 +54,6 @@ class INET_API FunctionBase : public IFunction<R, D>
 
     virtual typename D::I getDomain() const override {
         return typename D::I(D::P::getLowerBoundaries(), D::P::getUpperBoundaries());
-    }
-
-    virtual Ptr<const IFunction<R, D>> limitDomain(const typename D::I& i) const override {
-        return makeShared<DomainLimitedFunction<R, D>>(const_cast<FunctionBase<R, D> *>(this)->shared_from_this(), i.intersect(getDomain()));
-    }
-
-    template<int DIMS, typename RI, typename DI>
-    Ptr<const IFunction<RI, DI>> integrate() const {
-        return makeShared<IntegratedFunction<RI, DI>>(this);
     }
 
     virtual R getMin() const override { return getMin(getDomain()); }
@@ -117,6 +108,11 @@ class INET_API FunctionBase : public IFunction<R, D>
     }
 };
 
+template<typename R, typename D, int DIMS, typename RI, typename DI>
+Ptr<const IFunction<RI, DI>> integrate(const Ptr<const IFunction<R, D>>& f) {
+    return makeShared<IntegratedFunction<R, D, DIMS, RI, DI>>(f);
+}
+
 template<typename R, typename D>
 class INET_API DomainLimitedFunction : public FunctionBase<R, D>
 {
@@ -143,13 +139,6 @@ class INET_API DomainLimitedFunction : public FunctionBase<R, D>
 };
 
 template<typename R, typename D>
-class INET_API IntegratedFunction : public FunctionBase<R, D>
-{
-  protected:
-    const Ptr<const IFunction<R, D>> f;
-};
-
-template<typename R, typename D>
 class INET_API ConstantFunction : public FunctionBase<R, D>
 {
   protected:
@@ -171,7 +160,7 @@ class INET_API ConstantFunction : public FunctionBase<R, D>
     virtual R getMin(const typename D::I& i) const override { return r; }
     virtual R getMax(const typename D::I& i) const override { return r; }
     virtual R getMean(const typename D::I& i, int dims = -1) const override { return r; }
-    virtual R getIntegral(const typename D::I& i, int dims = -1) const override { return r * i.getPartialVolume(dims); }
+    virtual R getIntegral(const typename D::I& i, int dims = -1) const override { return r == R(0) ? r : r * i.getPartialVolume(dims); }
 };
 
 template<typename R, typename X>
@@ -850,6 +839,63 @@ class INET_API SumFunction : public FunctionBase<R, D>
                     throw cRuntimeError("TODO");
             });
         }
+    }
+};
+
+template<typename R, typename D, int DIMS, typename RI, typename DI>
+class IntegratedFunction : public FunctionBase<RI, DI>
+{
+    const Ptr<const IFunction<R, D>> f;
+
+  public:
+    IntegratedFunction(const Ptr<const IFunction<R, D>>& f): f(f) { }
+
+    virtual RI getValue(const typename DI::P& p) const override {
+        auto l1 = D::P::getLowerBoundaries();
+        auto u1 = D::P::getUpperBoundaries();
+        p.template copyTo<typename D::P, DIMS>(l1);
+        p.template copyTo<typename D::P, DIMS>(u1);
+        RI ri(0);
+        typename D::I i1(l1, u1);
+        f->partition(i1, [&] (const typename D::I& i2, const IFunction<R, D> *g) {
+            R r = g->getIntegral(i2, ~DIMS);
+            ri += RI(toDouble(r));
+        });
+        return ri;
+    }
+
+    virtual void partition(const typename DI::I& i, std::function<void (const typename DI::I&, const IFunction<RI, DI> *)> g) const override {
+        const auto& l = i.getLower();
+        const auto& u = i.getUpper();
+        auto l1 = D::P::getLowerBoundaries();
+        auto u1 = D::P::getUpperBoundaries();
+        l.template copyTo<typename D::P, DIMS>(l1);
+        u.template copyTo<typename D::P, DIMS>(u1);
+        typename D::I i1(l1, u1);
+        f->partition(i1, [&] (const typename D::I& i2, const IFunction<R, D> *h) {
+            if (dynamic_cast<const ConstantFunction<R, D> *>(h)) {
+                auto l3 = i2.getLower();
+                auto u3 = i2.getUpper();
+                auto z = DI::P::getZero();
+                z.template copyTo<typename D::P, DIMS>(l3);
+                z.template copyTo<typename D::P, DIMS>(u3);
+                typename D::I i3(l3, u3);
+                ConstantFunction<RI, DI> i(RI(toDouble(h->getIntegral(i3, ~DIMS))));
+                auto l4 = DI::P::getZero();
+                auto u4 = DI::P::getZero();
+                l4.template copyFrom<typename D::P, DIMS>(i3.getLower());
+                u4.template copyFrom<typename D::P, DIMS>(i3.getUpper());
+                typename DI::I i4(l4, u4);
+                g(i4, &i);
+            }
+            else if (dynamic_cast<const LinearInterpolatedFunction<R, D> *>(h)) {
+//                // LinearInterpolatedFunction<R, E> i(h->getIntegral(..., ..., 0b01), h->getIntegral(..., ..., 0b01));
+//                // g(l3, u3, &i);
+                throw cRuntimeError("TODO");
+            }
+            else
+                throw cRuntimeError("TODO");
+        });
     }
 };
 
