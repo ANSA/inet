@@ -33,19 +33,19 @@ class INET_API OspfPacketSerializer : public FieldsChunkSerializer
     static uint16_t deserializeOspfHeader(MemoryInputStream& stream, IntrusivePtr<OspfPacket>& ospfPacket);
 
     static void serializeLsaHeader(MemoryOutputStream& stream, const OspfLsaHeader& lsaHeader);
-    static bool decerializeLsaHeader(MemoryInputStream& stream, OspfLsaHeader *lsaHeader);
+    static bool deserializeLsaHeader(MemoryInputStream& stream, OspfLsaHeader *lsaHeader);
 
     static void serializeRouterLsa(MemoryOutputStream& stream, const OspfRouterLsa& routerLsa);
-    static bool decerializeRouterLsa(MemoryInputStream& stream, OspfRouterLsa *routerLsa);
+    static bool deserializeRouterLsa(MemoryInputStream& stream, OspfRouterLsa *routerLsa);
 
     static void serializeNetworkLsa(MemoryOutputStream& stream, const OspfNetworkLsa& networkLsa);
-    static bool decerializeNetworkLsa(MemoryInputStream& stream, OspfNetworkLsa *networkLsa);
+    static bool deserializeNetworkLsa(MemoryInputStream& stream, OspfNetworkLsa *networkLsa);
 
     static void serializeSummaryLsa(MemoryOutputStream& stream, const OspfSummaryLsa& summaryLsa);
-    static bool decerializeSummaryLsa(MemoryInputStream& stream, OspfSummaryLsa *summaryLsa);
+    static bool deserializeSummaryLsa(MemoryInputStream& stream, OspfSummaryLsa *summaryLsa);
 
     static void serializeAsExternalLsa(MemoryOutputStream& stream, const OspfAsExternalLsa& asExternalLsa);
-    static bool decerializeAsExternalLsa(MemoryInputStream& stream, OspfAsExternalLsa *asExternalLsa);
+    static bool deserializeAsExternalLsa(MemoryInputStream& stream, OspfAsExternalLsa *asExternalLsa);
 
     static uint8_t ospfOptionToByte(const OspfOptions& options);
     static const OspfOptions byteToOspfOption(uint8_t c);
