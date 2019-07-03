@@ -103,7 +103,7 @@ class INET_API IFunction :
     /**
      * Returns the mean value for the given domain.
      */
-    virtual R getMean(const typename D::I& i, int dims = -1) const = 0;
+    virtual R getMean(const typename D::I& i) const = 0;
 
     /**
      * Returns the integral value for the whole domain.
@@ -113,7 +113,7 @@ class INET_API IFunction :
     /**
      * Returns the integral value for the given domain.
      */
-    virtual R getIntegral(const typename D::I& i, int dims = -1) const = 0;
+    virtual R getIntegral(const typename D::I& i) const = 0;
 
     /**
      * Adds the provided function to this function.

@@ -29,36 +29,38 @@ class INET_API Interval
   protected:
     Point<T ...> lower;
     Point<T ...> upper;
+    unsigned int closed;
 
   protected:
     template<size_t ... IS>
     Interval<T ...> intersectImpl(const Interval<T ...>& o, integer_sequence<size_t, IS...>) const {
         Point<T ...> l( (std::max(std::get<IS>(lower), std::get<IS>(o.lower))) ... );
         Point<T ...> u( (std::min(std::get<IS>(upper), std::get<IS>(o.upper))) ... );
-        return Interval<T ...>(l, u);
+        // TODO: closed bits based on upper <=> o.upper
+        return Interval<T ...>(l, u, closed | o.closed);
     }
 
     template<size_t ... IS>
     double getVolumeImpl(integer_sequence<size_t, IS...>) const {
         double result = 1;
-        std::initializer_list<double>({ result *= toDouble(std::get<IS>(upper) - std::get<IS>(lower)) ... });
+        int b = 1 << (std::tuple_size<std::tuple<T ...>>::value - 1);
+        std::initializer_list<double>({ result *= (!(closed & (b >> IS)) ? toDouble(std::get<IS>(upper) - std::get<IS>(lower)) : (std::get<IS>(upper) == std::get<IS>(lower) ? 1 : throw cRuntimeError("Invalid arguments"))) ... });
         return std::abs(result);
     }
 
     template<size_t ... IS>
-    double getPartialVolumeImpl(int dims, integer_sequence<size_t, IS...>) const {
-        double result = 1;
+    bool isValidIntervalImpl(integer_sequence<size_t, IS...>) const {
         int b = 1 << (std::tuple_size<std::tuple<T ...>>::value - 1);
-        std::initializer_list<double>({ result *= (dims & (b >> IS) ? toDouble(std::get<IS>(upper) - std::get<IS>(lower)) : (std::get<IS>(upper) == std::get<IS>(lower) ? 1 : throw cRuntimeError("Invalid arguments"))) ... });
-        return std::abs(result);
+        std::initializer_list<bool> bs{ (!(closed & (b >> IS)) ? std::get<IS>(lower) < std::get<IS>(upper) : std::get<IS>(lower) <= std::get<IS>(upper)) ... };
+        return std::all_of(bs.begin(), bs.end(), [] (bool b) { return b; });
     }
 
   public:
-    Interval(const Point<T ...>& lower, const Point<T ...>& upper) : lower(lower), upper(upper) {
-    }
+    Interval(const Point<T ...>& lower, const Point<T ...>& upper, unsigned int closed = 0) : lower(lower), upper(upper), closed(closed) { }
 
     const Point<T ...>& getLower() const { return lower; }
     const Point<T ...>& getUpper() const { return upper; }
+    unsigned int isClosed() const { return closed; }
 
     bool contains(const Point<T ...>& p) const {
         return lower <= p && p <= upper;
@@ -72,9 +74,10 @@ class INET_API Interval
         return getVolumeImpl(index_sequence_for<T ...>{});
     }
 
-    double getPartialVolume(int dims) const {
-        return getPartialVolumeImpl(dims, index_sequence_for<T ...>{});
+    bool isValid() const {
+        return isValidIntervalImpl(index_sequence_for<T ...>{});
     }
+
 };
 
 template<typename T0>
@@ -90,21 +93,6 @@ void iterateBoundaries(const Interval<T0, TS ...>& i, const std::function<void (
         f(concat(Point<T0>(head(i.getLower())), q));
         f(concat(Point<T0>(head(i.getUpper())), q));
     }));
-}
-
-namespace internal {
-
-template<typename ... T, size_t ... IS>
-inline bool isValidInterval(const Interval<T ...>& i, integer_sequence<size_t, IS...>) {
-    std::initializer_list<bool> bs{ (std::get<IS>(i.getLower()) < std::get<IS>(i.getUpper())) ... };
-    return std::all_of(bs.begin(), bs.end(), [] (bool b) { return b; });
-}
-
-}
-
-template<typename ... T>
-bool isValidInterval(const Interval<T ...>& i) {
-    return internal::isValidInterval(i, index_sequence_for<T ...>{});
 }
 
 template<typename ... T>

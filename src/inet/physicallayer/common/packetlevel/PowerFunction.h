@@ -65,7 +65,7 @@ class INET_API AttenuationFunction : public FunctionBase<double, Domain<simtime_
             Point<simtime_t, Hz> lower(std::get<0>(i.getLower()), std::max(std::get<1>(i.getLower()), frequency));
             Point<simtime_t, Hz> upper(std::get<0>(i.getUpper()), std::min(std::get<1>(i.getUpper()), frequency + frequencyQuantization));
             Interval<simtime_t, Hz> i1(lower, upper);
-            if (isValidInterval(i1))
+            if (i1.isValid())
                 f(i1, &g);
         }
     }
@@ -156,7 +156,7 @@ class INET_API ReceptionPowerFunction : public FunctionBase<WpHz, Domain<m, m, m
                 Point<simtime_t, Hz> u1(std::get<3>(upper) - propagationTime, std::min(std::get<4>(i.getUpper()), frequency + frequencyQuantization));
                 Interval<simtime_t, Hz> i1(l1, u1);
                 double attenuation = getAttenuation(Point<m, m, m, simtime_t, Hz>(std::get<0>(lower), std::get<1>(lower), std::get<2>(lower), std::get<3>(lower), frequency));
-                if (isValidInterval(i1)) {
+                if (i1.isValid()) {
                     transmissionPowerFunction->partition(i1, [&] (const Interval<simtime_t, Hz>& i2, const IFunction<WpHz, Domain<simtime_t, Hz>> *g) {
                         Interval<m, m, m, simtime_t, Hz> i3(
                             Point<m, m, m, simtime_t, Hz>(std::get<0>(lower), std::get<1>(lower), std::get<2>(lower), std::get<0>(i2.getLower()) + propagationTime, std::get<1>(i2.getLower())),
@@ -250,10 +250,10 @@ class INET_API AntennaGainFunction : public IFunction<double, Domain<Quaternion>
     virtual double getMax(const Interval<Quaternion>& i) const { throw cRuntimeError("TODO"); }
 
     virtual double getMean() const { throw cRuntimeError("TODO"); }
-    virtual double getMean(const Interval<Quaternion>& i, int dims = -1) const { throw cRuntimeError("TODO"); }
+    virtual double getMean(const Interval<Quaternion>& i) const { throw cRuntimeError("TODO"); }
 
     virtual double getIntegral() const { throw cRuntimeError("TODO"); }
-    virtual double getIntegral(const Interval<Quaternion>& i, int dims = -1) const { throw cRuntimeError("TODO"); }
+    virtual double getIntegral(const Interval<Quaternion>& i) const { throw cRuntimeError("TODO"); }
 
     virtual const Ptr<const IFunction<double, Domain<Quaternion>>> add(const Ptr<const IFunction<double, Domain<Quaternion>>>& o) const override { throw cRuntimeError("TODO"); }
     virtual const Ptr<const IFunction<double, Domain<Quaternion>>> subtract(const Ptr<const IFunction<double, Domain<Quaternion>>>& o) const override { throw cRuntimeError("TODO"); }

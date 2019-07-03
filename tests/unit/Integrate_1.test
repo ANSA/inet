@@ -29,7 +29,6 @@ Ptr<const IFunction<double, Domain<>>> i5 = integrate<double, Domain<Hz>, 0b0, d
 std::cout << "f(simtime_t, Hz) = 5: I(I(f, s), Hz)() = " << i5->getValue(Point<>()) << std::endl;
 
 %contains: stdout
-f() = 5: f() = 5, max(f) = 5
 f(s) = 5: f(0) = 5, max(f) = 5
 f(s) = 5: I(f, s)() = 10
 f(simtime_t, Hz) = 5: f(0, 0) = 5, max(f) = 5

@@ -75,15 +75,15 @@ class INET_API FunctionBase : public IFunction<R, D>
     }
 
     virtual R getMean() const override { return getMean(getDomain()); }
-    virtual R getMean(const typename D::I& i, int dims = -1) const override {
-        return getIntegral(i, dims) / i.getPartialVolume(dims);
+    virtual R getMean(const typename D::I& i) const override {
+        return getIntegral(i) / i.getVolume();
     }
 
     virtual R getIntegral() const override { return getIntegral(getDomain()); }
-    virtual R getIntegral(const typename D::I& i, int dims = -1) const override {
+    virtual R getIntegral(const typename D::I& i) const override {
         R result(0);
         this->partition(i, [&] (const typename D::I& i1, const IFunction<R, D> *f) {
-            double volume = i1.getPartialVolume(dims);
+            double volume = i1.getVolume();
             R value = f->getMean(i1);
             if (!(value == R(0) && std::isinf(volume)))
                 result += volume * value;
@@ -133,7 +133,7 @@ class INET_API DomainLimitedFunction : public FunctionBase<R, D>
 
     virtual void partition(const typename D::I& i, const std::function<void (const typename D::I&, const IFunction<R, D> *)> g) const override {
         const auto& i1 = i.intersect(domain);
-        if (isValidInterval(i1))
+        if (i1.isValid())
             f->partition(i1, g);
     }
 };
@@ -159,8 +159,8 @@ class INET_API ConstantFunction : public FunctionBase<R, D>
 
     virtual R getMin(const typename D::I& i) const override { return r; }
     virtual R getMax(const typename D::I& i) const override { return r; }
-    virtual R getMean(const typename D::I& i, int dims = -1) const override { return r; }
-    virtual R getIntegral(const typename D::I& i, int dims = -1) const override { return r == R(0) ? r : r * i.getPartialVolume(dims); }
+    virtual R getMean(const typename D::I& i) const override { return r; }
+    virtual R getIntegral(const typename D::I& i) const override { return r == R(0) ? r : r * i.getVolume(); }
 };
 
 template<typename R, typename X>
@@ -184,17 +184,17 @@ class INET_API OneDimensionalBoxcarFunction : public FunctionBase<R, Domain<X>>
 
     virtual void partition(const Interval<X>& i, const std::function<void (const Interval<X>&, const IFunction<R, Domain<X>> *)> f) const override {
         const auto& i1 = i.intersect(Interval<X>(getLowerBoundary<X>(), Point<X>(lower)));
-        if (isValidInterval(i1)) {
+        if (i1.isValid()) {
             ConstantFunction<R, Domain<X>> g(R(0));
             f(i1, &g);
         }
         const auto& i2 = i.intersect(Interval<X>(Point<X>(lower), Point<X>(upper)));
-        if (isValidInterval(i2)) {
+        if (i2.isValid()) {
             ConstantFunction<R, Domain<X>> g(r);
             f(i2, &g);
         }
         const auto& i3 = i.intersect(Interval<X>(Point<X>(upper), getUpperBoundary<X>()));
-        if (isValidInterval(i3)) {
+        if (i3.isValid()) {
             ConstantFunction<R, Domain<X>> g(R(0));
             f(i3, &g);
         }
@@ -213,7 +213,7 @@ class INET_API TwoDimensionalBoxcarFunction : public FunctionBase<R, Domain<X, Y
 
   protected:
     void callf(const Interval<X, Y>& i, const std::function<void (const Interval<X, Y>&, const IFunction<R, Domain<X, Y>> *)> f, R r) const {
-        if (isValidInterval(i)) {
+        if (i.isValid()) {
             ConstantFunction<R, Domain<X, Y>> g(r);
             f(i, &g);
         }
@@ -287,7 +287,7 @@ class INET_API LinearInterpolatedFunction : public FunctionBase<R, D>
         return std::max(getValue(i.getLower()), getValue(i.getUpper()));
     }
 
-    virtual R getMean(const typename D::I& i, int dims = -1) const override {
+    virtual R getMean(const typename D::I& i) const override {
         return getValue((i.getLower() + i.getUpper()) / 2);
     }
 };
@@ -333,7 +333,7 @@ class INET_API OneDimensionalInterpolatedFunction : public FunctionBase<R, Domai
             auto jt = it;
             jt++;
             auto i1 = i.intersect(Interval<X>(Point<X>(it->first), Point<X>(jt->first)));
-            if (isValidInterval(i1)) {
+            if (i1.isValid()) {
                 const auto interpolator = it->second.second;
                 if (dynamic_cast<const EitherInterpolator<X, R> *>(interpolator)) {
                     ConstantFunction<R, Domain<X>> g(it->second.first);
@@ -572,7 +572,7 @@ class INET_API ReciprocalFunction : public FunctionBase<R, D>
             return std::max(getValue(i.getLower()), getValue(i.getUpper()));
     }
 
-    virtual R getMean(const typename D::I& i, int dims = -1) const override {
+    virtual R getMean(const typename D::I& i) const override {
         return R(getIntegral(i.getUpper()) - getIntegral(i.getLower())) / (i.getUpper().get(dimension) - i.getLower().get(dimension));
     }
 };
@@ -856,9 +856,9 @@ class IntegratedFunction : public FunctionBase<RI, DI>
         p.template copyTo<typename D::P, DIMS>(l1);
         p.template copyTo<typename D::P, DIMS>(u1);
         RI ri(0);
-        typename D::I i1(l1, u1);
+        typename D::I i1(l1, u1, DIMS);
         f->partition(i1, [&] (const typename D::I& i2, const IFunction<R, D> *g) {
-            R r = g->getIntegral(i2, ~DIMS);
+            R r = g->getIntegral(i2);
             ri += RI(toDouble(r));
         });
         return ri;
@@ -871,7 +871,7 @@ class IntegratedFunction : public FunctionBase<RI, DI>
         auto u1 = D::P::getUpperBoundaries();
         l.template copyTo<typename D::P, DIMS>(l1);
         u.template copyTo<typename D::P, DIMS>(u1);
-        typename D::I i1(l1, u1);
+        typename D::I i1(l1, u1, ~DIMS);
         f->partition(i1, [&] (const typename D::I& i2, const IFunction<R, D> *h) {
             if (dynamic_cast<const ConstantFunction<R, D> *>(h)) {
                 auto l3 = i2.getLower();
@@ -879,12 +879,12 @@ class IntegratedFunction : public FunctionBase<RI, DI>
                 auto z = DI::P::getZero();
                 z.template copyTo<typename D::P, DIMS>(l3);
                 z.template copyTo<typename D::P, DIMS>(u3);
-                typename D::I i3(l3, u3);
-                ConstantFunction<RI, DI> i(RI(toDouble(h->getIntegral(i3, ~DIMS))));
+                typename D::I i3(l3, u3, DIMS);
+                ConstantFunction<RI, DI> i(RI(toDouble(h->getIntegral(i3))));
                 auto l4 = DI::P::getZero();
                 auto u4 = DI::P::getZero();
-                l4.template copyFrom<typename D::P, DIMS>(i3.getLower());
-                u4.template copyFrom<typename D::P, DIMS>(i3.getUpper());
+                l4.template copyFrom<typename D::P, DIMS>(i2.getLower());
+                u4.template copyFrom<typename D::P, DIMS>(i2.getUpper());
                 typename DI::I i4(l4, u4);
                 g(i4, &i);
             }
