@@ -32,10 +32,7 @@ Register_Serializer(OspfLinkStateAcknowledgementPacket, OspfPacketSerializer);
 void OspfPacketSerializer::serialize(MemoryOutputStream& stream, const Ptr<const Chunk>& chunk) const
 {
     const auto& ospfPacket = staticPtrCast<const OspfPacket>(chunk);
-    B start = B(stream.getLength());
-    std::cout << "serializer: before: " << B(stream.getLength()) << endl;
     serializeOspfHeader(stream, ospfPacket);
-    std::cout << "serializer: after: " << B(stream.getLength()) << endl;
     switch (ospfPacket->getType()) {
         case HELLO_PACKET: {
             const auto& helloPacket = staticPtrCast<const OspfHelloPacket>(ospfPacket);
@@ -50,8 +47,6 @@ void OspfPacketSerializer::serialize(MemoryOutputStream& stream, const Ptr<const
             for (size_t i = 0; i < helloPacket->getNeighborArraySize(); ++i) {
                 stream.writeIpv4Address(helloPacket->getNeighbor(i));
             }
-            std::cout << "serializer: HELLO_PACKET: length of the stream: " << B(stream.getLength()) - start << endl;
-            std::cout << "serializer: HELLO_PACKET: chunklength: " << helloPacket->getChunkLength() << endl;
             break;
         }
         case DATABASE_DESCRIPTION_PACKET: {
@@ -68,8 +63,6 @@ void OspfPacketSerializer::serialize(MemoryOutputStream& stream, const Ptr<const
             for (unsigned int i = 0; i < ddPacket->getLsaHeadersArraySize(); ++i) {
                 serializeLsaHeader(stream, ddPacket->getLsaHeaders(i));
             }
-            std::cout << "serializer: DATABASE_DESCRIPTION_PACKET: length of the stream: " << B(stream.getLength()) - start << endl;
-            std::cout << "serializer: DATABASE_DESCRIPTION_PACKET: chunklength: " << ddPacket->getChunkLength() << endl;
             break;
         }
         case LINKSTATE_REQUEST_PACKET: {
@@ -81,8 +74,6 @@ void OspfPacketSerializer::serialize(MemoryOutputStream& stream, const Ptr<const
                 stream.writeIpv4Address(req.linkStateID);
                 stream.writeIpv4Address(req.advertisingRouter);
             }
-            std::cout << "serializer: LINKSTATE_REQUEST_PACKET: length of the stream: " << B(stream.getLength()) - start << endl;
-            std::cout << "serializer: LINKSTATE_REQUEST_PACKET: chunklength: " << requestPacket->getChunkLength() << endl;
             break;
         }
         case LINKSTATE_UPDATE_PACKET: {
@@ -118,8 +109,6 @@ void OspfPacketSerializer::serialize(MemoryOutputStream& stream, const Ptr<const
                         throw cRuntimeError("Cannot serialize BGP packet: type %d not supported.", type);
                 }
             }
-            std::cout << "serializer: LINKSTATE_UPDATE_PACKET: length of the stream: " << B(stream.getLength()) - start << endl;
-            std::cout << "serializer: LINKSTATE_UPDATE_PACKET: chunklength: " << updatePacket->getChunkLength() << endl;
             break;
         }
         case LINKSTATE_ACKNOWLEDGEMENT_PACKET: {
@@ -128,8 +117,6 @@ void OspfPacketSerializer::serialize(MemoryOutputStream& stream, const Ptr<const
             for (unsigned int i = 0; i < ackPacket->getLsaHeadersArraySize(); ++i) {
                 serializeLsaHeader(stream, ackPacket->getLsaHeaders(i));
             }
-            std::cout << "serializer: LINKSTATE_ACKNOWLEDGEMENT_PACKET: length of the stream: " << B(stream.getLength()) - start << endl;
-            std::cout << "serializer: LINKSTATE_ACKNOWLEDGEMENT_PACKET: chunklength: " << ackPacket->getChunkLength() << endl;
             break;
         }
         default:
@@ -140,10 +127,7 @@ void OspfPacketSerializer::serialize(MemoryOutputStream& stream, const Ptr<const
 const Ptr<Chunk> OspfPacketSerializer::deserialize(MemoryInputStream& stream) const
 {
     auto ospfPacket = makeShared<OspfPacket>();
-    B start = B(stream.getRemainingLength());
-    std::cout << "deserializer: before: " << start - B(stream.getRemainingLength()) << endl;
     uint16_t packetLength = deserializeOspfHeader(stream, ospfPacket);
-    std::cout << "deserializer: after: " << start - B(stream.getRemainingLength()) << endl;
     switch (ospfPacket->getType()) {
         case HELLO_PACKET: {
             auto helloPacket = makeShared<OspfHelloPacket>();
@@ -162,8 +146,6 @@ const Ptr<Chunk> OspfPacketSerializer::deserialize(MemoryInputStream& stream) co
             for (int i = 0; i< numNeighbors; i++) {
                 helloPacket->setNeighbor(i, stream.readIpv4Address());
             }
-            std::cout << "deserializer: HELLO_PACKET: length of the stream: " << start - B(stream.getRemainingLength()) << endl;
-            std::cout << "deserializer: HELLO_PACKET: chunklength: " << helloPacket->getChunkLength() << endl;
             return helloPacket;
         }
         case DATABASE_DESCRIPTION_PACKET: {
@@ -182,12 +164,10 @@ const Ptr<Chunk> OspfPacketSerializer::deserialize(MemoryInputStream& stream) co
                 ddPacket->markIncorrect();
             ddPacket->setLsaHeadersArraySize(numLsaHeaders);
             for (int i = 0; i< numLsaHeaders; i++) {
-                OspfLsaHeader lsaHeader = OspfLsaHeader();
-                deserializeLsaHeader(stream, lsaHeader);
-                ddPacket->setLsaHeaders(i, lsaHeader);
+                OspfLsaHeader *lsaHeader = new OspfLsaHeader();
+                deserializeLsaHeader(stream, *lsaHeader);
+                ddPacket->setLsaHeaders(i, *lsaHeader);
             }
-            std::cout << "deserializer: DATABASE_DESCRIPTION_PACKET: length of the stream: " << start - B(stream.getRemainingLength()) << endl;
-            std::cout << "deserializer: DATABASE_DESCRIPTION_PACKET: chunklength: " << ddPacket->getChunkLength() << endl;
             return ddPacket;
         }
         case LINKSTATE_REQUEST_PACKET: {
@@ -198,14 +178,12 @@ const Ptr<Chunk> OspfPacketSerializer::deserialize(MemoryInputStream& stream) co
                 requestPacket->markIncorrect();
             requestPacket->setRequestsArraySize(numReq);
             for (int i = 0; i < numReq; i++) {
-                auto req = new LsaRequest();
+                LsaRequest *req = new LsaRequest();
                 req->lsType = stream.readUint32Be();
                 req->linkStateID = stream.readIpv4Address();
                 req->advertisingRouter = stream.readIpv4Address();
                 requestPacket->setRequests(i, *req);
             }
-            std::cout << "deserializer: LINKSTATE_REQUEST_PACKET: length of the stream: " << start - B(stream.getRemainingLength()) << endl;
-            std::cout << "deserializer: LINKSTATE_REQUEST_PACKET: chunklength: " << requestPacket->getChunkLength() << endl;
             return requestPacket;
         }
         case LINKSTATE_UPDATE_PACKET: {
@@ -214,42 +192,42 @@ const Ptr<Chunk> OspfPacketSerializer::deserialize(MemoryInputStream& stream) co
             uint32_t numLSAs = stream.readUint32Be();
             updatePacket->setOspfLSAsArraySize(numLSAs);
             for (uint32_t i = 0; i < numLSAs; i++) {
-                OspfLsa ospfLSAs = OspfLsa();
-                auto& lsaHeader = ospfLSAs.getHeaderForUpdate();
-                deserializeLsaHeader(stream, lsaHeader);
-                LsaType type = lsaHeader.getLsType();
+                OspfLsaHeader *lsaHeader = new OspfLsaHeader();
+                deserializeLsaHeader(stream, *lsaHeader);
+                LsaType type = lsaHeader->getLsType();
                 switch (type) {
                     case ROUTERLSA_TYPE: {
-                        OspfRouterLsa routerLsa = OspfRouterLsa();
-                        routerLsa.setHeader(lsaHeader);
-                        deserializeRouterLsa(stream, updatePacket, routerLsa);
+                        OspfRouterLsa *routerLsa = new OspfRouterLsa();
+                        routerLsa->setHeader(*lsaHeader);
+                        deserializeRouterLsa(stream, updatePacket, *routerLsa);
+                        updatePacket->setOspfLSAs(i, routerLsa);
                         break;
                     }
                     case NETWORKLSA_TYPE: {
-                        OspfNetworkLsa networkLsa = OspfNetworkLsa();
-                        networkLsa.setHeader(lsaHeader);
-                        deserializeNetworkLsa(stream, updatePacket, networkLsa);
+                        OspfNetworkLsa *networkLsa = new OspfNetworkLsa();
+                        networkLsa->setHeader(*lsaHeader);
+                        deserializeNetworkLsa(stream, updatePacket, *networkLsa);
+                        updatePacket->setOspfLSAs(i, networkLsa);
                         break;
                     }
                     case SUMMARYLSA_NETWORKS_TYPE: {
-                        OspfSummaryLsa summaryLsa = OspfSummaryLsa();
-                        summaryLsa.setHeader(lsaHeader);
-                        deserializeSummaryLsa(stream, updatePacket, summaryLsa);
+                        OspfSummaryLsa *summaryLsa = new OspfSummaryLsa();
+                        summaryLsa->setHeader(*lsaHeader);
+                        deserializeSummaryLsa(stream, updatePacket, *summaryLsa);
+                        updatePacket->setOspfLSAs(i, summaryLsa);
                         break;
                     }
                     case AS_EXTERNAL_LSA_TYPE: {
-                        OspfAsExternalLsa asExternalLsa = OspfAsExternalLsa();
-                        asExternalLsa.setHeader(lsaHeader);
-                        deserializeAsExternalLsa(stream, updatePacket, asExternalLsa);
+                        OspfAsExternalLsa *asExternalLsa = new OspfAsExternalLsa();
+                        asExternalLsa->setHeader(*lsaHeader);
+                        deserializeAsExternalLsa(stream, updatePacket, *asExternalLsa);
+                        updatePacket->setOspfLSAs(i, asExternalLsa);
                         break;
                     }
                     default:
-                        throw cRuntimeError("Cannot deserialize OSPF Packet: lsa type %d not supported!", type);
+                        updatePacket->markIncorrect();
                 }
-                updatePacket->setOspfLSAs(i, &ospfLSAs);
             }
-            std::cout << "deserializer: LINKSTATE_UPDATE_PACKET: length of the stream: " << start - B(stream.getRemainingLength()) << endl;
-            std::cout << "deserializer: LINKSTATE_UPDATE_PACKET: chunklength: " << updatePacket->getChunkLength() << endl;
             return updatePacket;
         }
         case LINKSTATE_ACKNOWLEDGEMENT_PACKET: {
@@ -260,16 +238,16 @@ const Ptr<Chunk> OspfPacketSerializer::deserialize(MemoryInputStream& stream) co
                 ackPacket->markIncorrect();
             ackPacket->setLsaHeadersArraySize(numHeaders);
             for (int i = 0; i < numHeaders; i++) {
-                OspfLsaHeader lsaHeader = OspfLsaHeader();
-                deserializeLsaHeader(stream, lsaHeader);
-                ackPacket->setLsaHeaders(i, lsaHeader);
+                OspfLsaHeader *lsaHeader = new OspfLsaHeader();
+                deserializeLsaHeader(stream, *lsaHeader);
+                ackPacket->setLsaHeaders(i, *lsaHeader);
             }
-            std::cout << "deserializer: LINKSTATE_ACKNOWLEDGEMENT_PACKET: length of the stream: " << start - B(stream.getRemainingLength()) << endl;
-            std::cout << "deserializer: LINKSTATE_ACKNOWLEDGEMENT_PACKET: chunklength: " << ackPacket->getChunkLength() << endl;
             return ackPacket;
         }
-        default:
-            throw cRuntimeError("Unknown OSPF message type in OspfPacketSerializer");
+        default: {
+            ospfPacket->markIncorrect();
+            return ospfPacket;
+        }
     }
 }
 
@@ -378,22 +356,23 @@ void OspfPacketSerializer::deserializeRouterLsa(MemoryInputStream& stream, const
     routerLsa.setNumberOfLinks(numLinks);
     routerLsa.setLinksArraySize(numLinks);
     for (int32_t i = 0; i < numLinks; ++i) {
-        Link link = Link();
-        link.setLinkID(stream.readIpv4Address());
-        link.setLinkData(stream.readUint32Be());
-        link.setType(static_cast<LinkType>(stream.readByte()));
-        link.setNumberOfTOS(stream.readByte());
-        link.setLinkCost(stream.readUint16Be());
-        uint32_t numTos = link.getNumberOfTOS();
-        link.setTosDataArraySize(numTos);
+        Link *link = new Link();
+        link->setLinkID(stream.readIpv4Address());
+        link->setLinkData(stream.readUint32Be());
+        link->setType(static_cast<LinkType>(stream.readByte()));
+        link->setNumberOfTOS(stream.readByte());
+        link->setLinkCost(stream.readUint16Be());
+        uint32_t numTos = link->getNumberOfTOS();
+        link->setTosDataArraySize(numTos);
         for (uint32_t j = 0; j < numTos; ++j) {
-            TosData tos = TosData();
-            tos.tos = stream.readByte();
+            TosData *tos = new TosData();
+            tos->tos = stream.readByte();
             if (stream.readByte() != 0)
                 updatePacket->markIncorrect();
-            tos.tosMetric = stream.readUint16Be();
-            link.setTosData(j, tos);
+            tos->tosMetric = stream.readUint16Be();
+            link->setTosData(j, *tos);
         }
+        routerLsa.setLinks(i, *link);
     }
 }
 
@@ -412,7 +391,8 @@ void OspfPacketSerializer::deserializeNetworkLsa(MemoryInputStream& stream, cons
             OSPF_LSA_HEADER_LENGTH - OSPF_NETWORKLSA_MASK_LENGTH).get() / OSPF_NETWORKLSA_ADDRESS_LENGTH.get();
     if (numAttachedRouters < 0)
         updatePacket->markIncorrect();
-    networkLsa.setAttachedRoutersArraySize(numAttachedRouters);
+    else
+        networkLsa.setAttachedRoutersArraySize(numAttachedRouters);
     for (int i = 0; i < numAttachedRouters; ++i) {
         networkLsa.setAttachedRouters(i, stream.readIpv4Address());
     }
@@ -440,12 +420,13 @@ void OspfPacketSerializer::deserializeSummaryLsa(MemoryInputStream& stream, cons
             OSPF_LSA_HEADER_LENGTH - OSPF_NETWORKLSA_MASK_LENGTH - B(4)).get() / OSPF_TOS_LENGTH.get();
     if (numTos < 0)
         updatePacket->markIncorrect();
-    summaryLsa.setTosDataArraySize(numTos);
+    else
+        summaryLsa.setTosDataArraySize(numTos);
     for (int i = 0; i < numTos; i++) {
-        TosData tos = TosData();
-        tos.tos = stream.readUint8();
-        tos.tosMetric = stream.readUint24Be();
-        summaryLsa.setTosData(i, tos);
+        TosData *tos = new TosData();
+        tos->tos = stream.readUint8();
+        tos->tosMetric = stream.readUint24Be();
+        summaryLsa.setTosData(i, *tos);
     }
 }
 
@@ -457,7 +438,7 @@ void OspfPacketSerializer::serializeAsExternalLsa(MemoryOutputStream& stream, co
     for (size_t i = 0; i < asExternalLsa.getContents().getExternalTOSInfoArraySize(); ++i) {
         const ExternalTosInfo& exTos = contents.getExternalTOSInfo(i);
         stream.writeBit(exTos.E_ExternalMetricType);
-        stream.writeNBitsOfUint64Be(7, exTos.tos);
+        stream.writeNBitsOfUint64Be(exTos.tos, 7);
         stream.writeUint24Be(exTos.routeCost);
         stream.writeIpv4Address(exTos.forwardingAddress);
         stream.writeUint32Be(exTos.externalRouteTag);
@@ -473,15 +454,16 @@ void OspfPacketSerializer::deserializeAsExternalLsa(MemoryInputStream& stream, c
             OSPF_LSA_HEADER_LENGTH - OSPF_ASEXTERNALLSA_HEADER_LENGTH).get() / OSPF_ASEXTERNALLSA_TOS_INFO_LENGTH.get();
     if (numExternalTos < 0)
         updatePacket->markIncorrect();
-    contents.setExternalTOSInfoArraySize(numExternalTos);
+    else
+        contents.setExternalTOSInfoArraySize(numExternalTos);
     for (int i = 0; i < numExternalTos; i++) {
-        ExternalTosInfo extTos = ExternalTosInfo();
-        extTos.E_ExternalMetricType = stream.readBit();
-        extTos.tos = stream.readNBitsToUint64Be(7);
-        extTos.routeCost = stream.readUint24Be();
-        extTos.forwardingAddress = stream.readIpv4Address();
-        extTos.externalRouteTag = stream.readUint32Be();
-        contents.setExternalTOSInfo(i, extTos);
+        ExternalTosInfo *extTos = new ExternalTosInfo();
+        extTos->E_ExternalMetricType = stream.readBit();
+        extTos->tos = stream.readNBitsToUint64Be(7);
+        extTos->routeCost = stream.readUint24Be();
+        extTos->forwardingAddress = stream.readIpv4Address();
+        extTos->externalRouteTag = stream.readUint32Be();
+        contents.setExternalTOSInfo(i, *extTos);
     }
 
 void OspfPacketSerializer::serializeLsa(MemoryOutputStream& stream, const OspfLsa& lsa)
