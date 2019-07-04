@@ -179,12 +179,12 @@ inline double mW2dBmW(double mW) { return 10.0 * log10(mW); }
 /**
  * Converts a dBmW/MHz value into W/Hz.
  */
-inline double dBmWpMHz2WpHz(double dBmWpMHz) { return pow(10.0, dBmWpMHz / 1000000.0 / 10.0) / 1000.0; }
+inline double dBmWpMHz2WpHz(double dBmWpMHz) { return pow(10.0, dBmWpMHz / 10.0) / 1000000.0 / 1000.0; }
 
 /**
  * Convert a W/Hz value to dBmW/MHz.
  */
-inline double wpHz2dBmWpMHz(double wpHz) { return 1000000.0 * 10.0 * log10(wpHz * 1000.0); }
+inline double wpHz2dBmWpMHz(double wpHz) { return 10.0 * log10(wpHz * 1000000.0 * 1000.0); }
 
 /**
  * Convert a degree value to radian.
