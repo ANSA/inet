@@ -85,7 +85,8 @@ const INoise *DimensionalAnalogModelBase::computeNoise(const IListening *listeni
     EV_TRACE << "Noise power begin " << endl;
     EV_TRACE << *noisePower << endl;
     EV_TRACE << "Noise power end" << endl;
-    return new DimensionalNoise(listening->getStartTime(), listening->getEndTime(), carrierFrequency, bandwidth, noisePower);
+    const auto& bandpassFilter = makeShared<math::TwoDimensionalBoxcarFunction<double, simtime_t, Hz>>(listening->getStartTime(), listening->getEndTime(), carrierFrequency - bandwidth / 2, carrierFrequency + bandwidth / 2, 1);
+    return new DimensionalNoise(listening->getStartTime(), listening->getEndTime(), carrierFrequency, bandwidth, noisePower->multiply(bandpassFilter));
 }
 
 const INoise *DimensionalAnalogModelBase::computeNoise(const IReception *reception, const INoise *noise) const
