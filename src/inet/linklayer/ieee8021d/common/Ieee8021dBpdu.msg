@@ -25,7 +25,7 @@ namespace inet;
 //
 class Bpdu extends FieldsChunk
 {
-    chunkLength = B(35);
+    chunkLength = B(39);
     unsigned int protocolIdentifier;          // 0 for STP, 1 for RSTP (TODO use them)
     unsigned int protocolVersionIdentifier;   // currently 0
 
