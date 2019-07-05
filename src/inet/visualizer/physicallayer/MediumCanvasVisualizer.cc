@@ -149,8 +149,8 @@ void MediumCanvasVisualizer::refreshSpectrumFigure(const cModule *module, PlotFi
         antenna = radio->getAntenna();
         auto dimensionalTransmission = dynamic_cast<const DimensionalTransmission *>(radio->getTransmissionInProgress());
         if (spectrumAutoFrequencyAxis && dimensionalTransmission != nullptr) {
-            dimensionalTransmission->getPower()->partition(dimensionalTransmission->getPower()->getDomain(), [&] (const Interval<simtime_t, Hz>& i, const IFunction<WpHz, math::Domain<simtime_t, Hz>> *f) {
-                if (auto constantFunction = dynamic_cast<const ConstantFunction<WpHz, math::Domain<simtime_t, Hz>> *>(f)) {
+            dimensionalTransmission->getPower()->partition(dimensionalTransmission->getPower()->getDomain(), [&] (const Interval<simtime_t, Hz>& i, const IFunction<WpHz, Domain<simtime_t, Hz>> *f) {
+                if (auto constantFunction = dynamic_cast<const ConstantFunction<WpHz, Domain<simtime_t, Hz>> *>(f)) {
                     if (constantFunction->getConstantValue() == WpHz(0))
                         return;
                 }
@@ -180,7 +180,7 @@ void MediumCanvasVisualizer::refreshSpectrumFigure(const cModule *module, PlotFi
         figure->setMaxX(GHz(maxFrequency).get());
         figure->setXTickCount(3);
         for (Hz frequency = minFrequency; frequency < maxFrequency; frequency += stepFrequency) {
-            math::Point<m, m, m, simtime_t, Hz> p(m(position.x), m(position.y), m(position.z), startTime, frequency);
+            Point<m, m, m, simtime_t, Hz> p(m(position.x), m(position.y), m(position.z), startTime, frequency);
             WpHz totalPower;
             WpHz signalPower;
             if (antenna != nullptr && (antenna->getGain()->getMinGain() != 1 || antenna->getGain()->getMaxGain() != 1)) {
@@ -189,7 +189,7 @@ void MediumCanvasVisualizer::refreshSpectrumFigure(const cModule *module, PlotFi
                     auto rf = dynamicPtrCast<const ReceptionPowerFunction>(f);
                     double gain = 1;
                     if (rf != nullptr) {
-                        const math::Point<m, m, m>& startPosition = rf->getStartPosition();
+                        const Point<m, m, m>& startPosition = rf->getStartPosition();
                         double dx = std::get<0>(startPosition).get() - position.x;
                         double dy = std::get<1>(startPosition).get() - position.y;
                         double dz = std::get<2>(startPosition).get() - position.z;
@@ -211,23 +211,23 @@ void MediumCanvasVisualizer::refreshSpectrumFigure(const cModule *module, PlotFi
                 signalPower = receptionPowerFunction != nullptr ? receptionPowerFunction->getValue(p) : WpHz(0);
             }
             if (transmission == nullptr)
-                figure->setValue(0, GHz(frequency).get(), inet::math::wpHz2dBmWpMHz(WpHz(totalPower).get()));
+                figure->setValue(0, GHz(frequency).get(), wpHz2dBmWpMHz(WpHz(totalPower).get()));
             else {
-                figure->setValue(1, GHz(frequency).get(), inet::math::wpHz2dBmWpMHz(WpHz(totalPower - signalPower).get()));
-                figure->setValue(2, GHz(frequency).get(), inet::math::wpHz2dBmWpMHz(WpHz(signalPower).get()));
+                figure->setValue(1, GHz(frequency).get(), wpHz2dBmWpMHz(WpHz(totalPower - signalPower).get()));
+                figure->setValue(2, GHz(frequency).get(), wpHz2dBmWpMHz(WpHz(signalPower).get()));
             }
         }
-        math::Point<m, m, m, simtime_t, Hz> lower(m(position.x), m(position.y), m(position.z), startTime, spectrumMinFrequency);
-        math::Point<m, m, m, simtime_t, Hz> upper(m(position.x), m(position.y), m(position.z), endTime, spectrumMaxFrequency);
-        math::Interval<m, m, m, simtime_t, Hz> interval(lower, upper);
+        Point<m, m, m, simtime_t, Hz> lower(m(position.x), m(position.y), m(position.z), startTime, spectrumMinFrequency);
+        Point<m, m, m, simtime_t, Hz> upper(m(position.x), m(position.y), m(position.z), endTime, spectrumMaxFrequency);
+        Interval<m, m, m, simtime_t, Hz> interval(lower, upper);
         WpHz minPower = mediumPowerFunction->getMin(interval);
         if (minPower > WpHz(0) && spectrumAutoPowerAxis)
             nonCostThisPtr->spectrumMinPower = std::min(spectrumMinPower, minPower);
         WpHz maxPower = mediumPowerFunction->getMax(interval);
         if (maxPower > WpHz(0) && spectrumAutoPowerAxis)
             nonCostThisPtr->spectrumMaxPower = std::max(spectrumMaxPower, maxPower);
-        double minValue = inet::math::wpHz2dBmWpMHz(WpHz(spectrumMinPower).get());
-        double maxValue = inet::math::wpHz2dBmWpMHz(WpHz(spectrumMaxPower).get());
+        double minValue = wpHz2dBmWpMHz(WpHz(spectrumMinPower).get());
+        double maxValue = wpHz2dBmWpMHz(WpHz(spectrumMaxPower).get());
         if (minValue < maxValue) {
             double margin = 0.05 * (maxValue - minValue);
             figure->setMinY(minValue - margin);
@@ -580,7 +580,7 @@ void MediumCanvasVisualizer::handleSignalDepartureStarted(const ITransmission *t
 #ifdef WITH_RADIO
             if (auto scalarTransmission = dynamic_cast<const ScalarTransmission *>(transmission)) {
                 char tmp[32];
-                sprintf(tmp, "%.4g dBW", inet::math::fraction2dB(W(scalarTransmission->getPower()).get()));
+                sprintf(tmp, "%.4g dBW", fraction2dB(W(scalarTransmission->getPower()).get()));
                 labelFigure->setText(tmp);
             }
             else
@@ -624,7 +624,7 @@ void MediumCanvasVisualizer::handleSignalArrivalStarted(const IReception *recept
 #ifdef WITH_RADIO
                 if (auto scalarReception = dynamic_cast<const ScalarReception *>(reception)) {
                     char tmp[32];
-                    sprintf(tmp, "%.4g dBW", inet::math::fraction2dB(W(scalarReception->getPower()).get()));
+                    sprintf(tmp, "%.4g dBW", fraction2dB(W(scalarReception->getPower()).get()));
                     labelFigure->setText(tmp);
                 }
                 else

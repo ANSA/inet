@@ -51,12 +51,12 @@ double DimensionalSnir::computeMin() const
     const simtime_t endTime = reception->getEndTime();
     Hz carrierFrequency = dimensionalReception->getCarrierFrequency();
     Hz bandwidth = dimensionalReception->getBandwidth();
-    math::Point<simtime_t, Hz> startPoint(startTime, carrierFrequency - bandwidth / 2);
-    math::Point<simtime_t, Hz> endPoint(endTime, carrierFrequency + bandwidth / 2);
+    Point<simtime_t, Hz> startPoint(startTime, carrierFrequency - bandwidth / 2);
+    Point<simtime_t, Hz> endPoint(endTime, carrierFrequency + bandwidth / 2);
     EV_TRACE << "SNIR begin " << endl;
     EV_TRACE << *snir << endl;
     EV_TRACE << "SNIR end" << endl;
-    double minSNIR = snir->getMin(math::Interval<simtime_t, Hz>(startPoint, endPoint));
+    double minSNIR = snir->getMin(Interval<simtime_t, Hz>(startPoint, endPoint));
     EV_DEBUG << "Computing minimum SNIR: start = " << startPoint << ", end = " << endPoint << " -> minimum SNIR = " << minSNIR << endl;
     return minSNIR;
 }
@@ -76,12 +76,12 @@ double DimensionalSnir::computeMax() const
     const simtime_t endTime = reception->getEndTime();
     Hz carrierFrequency = dimensionalReception->getCarrierFrequency();
     Hz bandwidth = dimensionalReception->getBandwidth();
-    math::Point<simtime_t, Hz> startPoint(startTime, carrierFrequency - bandwidth / 2);
-    math::Point<simtime_t, Hz> endPoint(endTime, carrierFrequency + bandwidth / 2);
+    Point<simtime_t, Hz> startPoint(startTime, carrierFrequency - bandwidth / 2);
+    Point<simtime_t, Hz> endPoint(endTime, carrierFrequency + bandwidth / 2);
     EV_TRACE << "SNIR begin " << endl;
     EV_TRACE << *snir << endl;
     EV_TRACE << "SNIR end" << endl;
-    double maxSNIR = snir->getMax(math::Interval<simtime_t, Hz>(startPoint, endPoint));
+    double maxSNIR = snir->getMax(Interval<simtime_t, Hz>(startPoint, endPoint));
     EV_DEBUG << "Computing maximum SNIR: start = " << startPoint << ", end = " << endPoint << " -> maximum SNIR = " << maxSNIR << endl;
     return maxSNIR;
 }

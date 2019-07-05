@@ -30,20 +30,20 @@ class INET_API DimensionalTransmitterBase : public virtual IPrintableObject
     template<typename T>
     class GainEntry {
       public:
-        const math::IInterpolator<T, double> *interpolator;
+        const IInterpolator<T, double> *interpolator;
         const char where;
         double length;
         T offset;
         double gain;
 
       public:
-        GainEntry(const math::IInterpolator<T, double> *interpolator, const char where, double length, T offset, double gain) :
+        GainEntry(const IInterpolator<T, double> *interpolator, const char where, double length, T offset, double gain) :
             interpolator(interpolator), where(where), length(length), offset(offset), gain(gain) { }
     };
 
   protected:
-    const math::IInterpolator<simtime_t, double> *firstTimeInterpolator = nullptr;
-    const math::IInterpolator<Hz, double> *firstFrequencyInterpolator = nullptr;
+    const IInterpolator<simtime_t, double> *firstTimeInterpolator = nullptr;
+    const IInterpolator<Hz, double> *firstFrequencyInterpolator = nullptr;
     std::vector<GainEntry<simtime_t>> timeGains;
     std::vector<GainEntry<Hz>> frequencyGains;
     const char *timeGainsNormalization = nullptr;
@@ -58,9 +58,9 @@ class INET_API DimensionalTransmitterBase : public virtual IPrintableObject
     virtual void parseFrequencyGains(const char *text);
 
     template<typename T>
-    const Ptr<const math::IFunction<double, math::Domain<T>>> normalize(const Ptr<const math::IFunction<double, math::Domain<T>>>& function, const char *normalization) const;
+    const Ptr<const IFunction<double, Domain<T>>> normalize(const Ptr<const IFunction<double, Domain<T>>>& function, const char *normalization) const;
 
-    virtual Ptr<const math::IFunction<WpHz, math::Domain<simtime_t, Hz>>> createPowerFunction(const simtime_t startTime, const simtime_t endTime, Hz carrierFrequency, Hz bandwidth, W power) const;
+    virtual Ptr<const IFunction<WpHz, Domain<simtime_t, Hz>>> createPowerFunction(const simtime_t startTime, const simtime_t endTime, Hz carrierFrequency, Hz bandwidth, W power) const;
 
   public:
     virtual std::ostream& printToStream(std::ostream& stream, int level) const override;

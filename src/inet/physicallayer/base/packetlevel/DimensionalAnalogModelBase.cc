@@ -35,7 +35,7 @@ void DimensionalAnalogModelBase::initialize(int stage)
         attenuateWithCarrierFrequency = par("attenuateWithCarrierFrequency");
 }
 
-const Ptr<const math::IFunction<WpHz, math::Domain<simtime_t, Hz>>> DimensionalAnalogModelBase::computeReceptionPower(const IRadio *receiverRadio, const ITransmission *transmission, const IArrival *arrival) const
+const Ptr<const IFunction<WpHz, Domain<simtime_t, Hz>>> DimensionalAnalogModelBase::computeReceptionPower(const IRadio *receiverRadio, const ITransmission *transmission, const IArrival *arrival) const
 {
     const IRadioMedium *radioMedium = receiverRadio->getMedium();
     const DimensionalTransmission *dimensionalTransmission = check_and_cast<const DimensionalTransmission *>(transmission);
@@ -48,12 +48,12 @@ const Ptr<const math::IFunction<WpHz, math::Domain<simtime_t, Hz>>> DimensionalA
     EV_TRACE << "Transmission power begin " << endl;
     EV_TRACE << *transmissionPowerFunction << endl;
     EV_TRACE << "Transmission power end" << endl;
-    math::Point<simtime_t, Hz> propagationShift(arrival->getStartTime() - transmission->getStartTime(), Hz(0));
-    const auto& propagatedTransmissionPowerFunction = makeShared<math::ShiftFunction<WpHz, math::Domain<simtime_t, Hz>>>(transmissionPowerFunction, propagationShift);
+    Point<simtime_t, Hz> propagationShift(arrival->getStartTime() - transmission->getStartTime(), Hz(0));
+    const auto& propagatedTransmissionPowerFunction = makeShared<ShiftFunction<WpHz, Domain<simtime_t, Hz>>>(transmissionPowerFunction, propagationShift);
     Hz frequencyQuantization = dimensionalTransmission->getBandwidth() / 10;
-    Ptr<const math::IFunction<double, math::Domain<simtime_t, Hz>>> attenuationFunction = makeShared<AttenuationFunction>(radioMedium, transmitterAntennaGain, receiverAntennaGain, transmissionStartPosition, receptionStartPosition, frequencyQuantization);
+    Ptr<const IFunction<double, Domain<simtime_t, Hz>>> attenuationFunction = makeShared<AttenuationFunction>(radioMedium, transmitterAntennaGain, receiverAntennaGain, transmissionStartPosition, receptionStartPosition, frequencyQuantization);
     if (attenuateWithCarrierFrequency)
-        attenuationFunction = makeShared<ConstantFunction<double, math::Domain<simtime_t, Hz>>>(attenuationFunction->getValue(math::Point<simtime_t, Hz>(arrival->getStartTime(), dimensionalTransmission->getCarrierFrequency())));
+        attenuationFunction = makeShared<ConstantFunction<double, Domain<simtime_t, Hz>>>(attenuationFunction->getValue(Point<simtime_t, Hz>(arrival->getStartTime(), dimensionalTransmission->getCarrierFrequency())));
     const auto& receptionPower = propagatedTransmissionPowerFunction->multiply(attenuationFunction);
     EV_TRACE << "Reception power begin " << endl;
     EV_TRACE << *receptionPower << endl;
@@ -66,7 +66,7 @@ const INoise *DimensionalAnalogModelBase::computeNoise(const IListening *listeni
     const BandListening *bandListening = check_and_cast<const BandListening *>(listening);
     Hz carrierFrequency = bandListening->getCarrierFrequency();
     Hz bandwidth = bandListening->getBandwidth();
-    std::vector<Ptr<const math::IFunction<WpHz, math::Domain<simtime_t, Hz>>>> receptionPowers;
+    std::vector<Ptr<const IFunction<WpHz, Domain<simtime_t, Hz>>>> receptionPowers;
     const DimensionalNoise *dimensionalBackgroundNoise = check_and_cast_nullable<const DimensionalNoise *>(interference->getBackgroundNoise());
     if (dimensionalBackgroundNoise) {
         const auto& backgroundNoisePower = dimensionalBackgroundNoise->getPower();
@@ -81,11 +81,11 @@ const INoise *DimensionalAnalogModelBase::computeNoise(const IListening *listeni
         EV_TRACE << *receptionPower << endl;
         EV_TRACE << "Interference power end" << endl;
     }
-    const Ptr<const math::IFunction<WpHz, math::Domain<simtime_t, Hz>>>& noisePower = makeShared<math::SumFunction<WpHz, math::Domain<simtime_t, Hz>>>(receptionPowers);
+    const Ptr<const IFunction<WpHz, Domain<simtime_t, Hz>>>& noisePower = makeShared<SumFunction<WpHz, Domain<simtime_t, Hz>>>(receptionPowers);
     EV_TRACE << "Noise power begin " << endl;
     EV_TRACE << *noisePower << endl;
     EV_TRACE << "Noise power end" << endl;
-    const auto& bandpassFilter = makeShared<math::TwoDimensionalBoxcarFunction<double, simtime_t, Hz>>(listening->getStartTime(), listening->getEndTime(), carrierFrequency - bandwidth / 2, carrierFrequency + bandwidth / 2, 1);
+    const auto& bandpassFilter = makeShared<TwoDimensionalBoxcarFunction<double, simtime_t, Hz>>(listening->getStartTime(), listening->getEndTime(), carrierFrequency - bandwidth / 2, carrierFrequency + bandwidth / 2, 1);
     return new DimensionalNoise(listening->getStartTime(), listening->getEndTime(), carrierFrequency, bandwidth, noisePower->multiply(bandpassFilter));
 }
 
@@ -93,7 +93,7 @@ const INoise *DimensionalAnalogModelBase::computeNoise(const IReception *recepti
 {
     auto dimensionalReception = check_and_cast<const DimensionalReception *>(reception);
     auto dimensionalNoise = check_and_cast<const DimensionalNoise *>(noise);
-    const Ptr<const math::IFunction<WpHz, math::Domain<simtime_t, Hz>>>& noisePower = makeShared<math::AdditionFunction<WpHz, math::Domain<simtime_t, Hz>>>(dimensionalReception->getPower(), dimensionalNoise->getPower());
+    const Ptr<const IFunction<WpHz, Domain<simtime_t, Hz>>>& noisePower = makeShared<AdditionFunction<WpHz, Domain<simtime_t, Hz>>>(dimensionalReception->getPower(), dimensionalNoise->getPower());
     return new DimensionalNoise(reception->getStartTime(), reception->getEndTime(), dimensionalReception->getCarrierFrequency(), dimensionalReception->getBandwidth(), noisePower);
 }
 

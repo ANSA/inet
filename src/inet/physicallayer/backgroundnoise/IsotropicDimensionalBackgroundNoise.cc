@@ -34,7 +34,7 @@ void IsotropicDimensionalBackgroundNoise::initialize(int stage)
 {
     cModule::initialize(stage);
     if (stage == INITSTAGE_LOCAL) {
-        power = mW(math::dBmW2mW(par("power")));
+        power = mW(dBmW2mW(par("power")));
     }
 }
 
@@ -54,7 +54,7 @@ const INoise *IsotropicDimensionalBackgroundNoise::computeNoise(const IListening
     Hz carrierFrequency = bandListening->getCarrierFrequency();
     Hz bandwidth = bandListening->getBandwidth();
     // NOTE: dividing by the bandwidth here makes sure the total background noise power in the listening band is the given power
-    const Ptr<const math::IFunction<WpHz, math::Domain<simtime_t, Hz>>>& powerFunction = makeShared<math::ConstantFunction<WpHz, math::Domain<simtime_t, Hz>>>(power / bandwidth);
+    const Ptr<const IFunction<WpHz, Domain<simtime_t, Hz>>>& powerFunction = makeShared<ConstantFunction<WpHz, Domain<simtime_t, Hz>>>(power / bandwidth);
     return new DimensionalNoise(startTime, endTime, carrierFrequency, bandwidth, powerFunction);
 }
 

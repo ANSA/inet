@@ -78,7 +78,7 @@ class INET_API AttenuationFunction : public FunctionBase<double, Domain<simtime_
 class INET_API ReceptionPowerFunction : public FunctionBase<WpHz, Domain<m, m, m, simtime_t, Hz>>
 {
   protected:
-    const Ptr<const IFunction<WpHz, math::Domain<simtime_t, Hz>>> transmissionPowerFunction;
+    const Ptr<const IFunction<WpHz, Domain<simtime_t, Hz>>> transmissionPowerFunction;
     const Ptr<const IFunction<double, Domain<Quaternion>>> transmitterAntennaGainFunction;
     const Ptr<const IFunction<double, Domain<mps, m, Hz>>> pathLossFunction;
     const Ptr<const IFunction<double, Domain<m, m, m, m, m, m, Hz>>> obstacleLossFunction;
@@ -109,7 +109,7 @@ class INET_API ReceptionPowerFunction : public FunctionBase<WpHz, Domain<m, m, m
     }
 
   public:
-    ReceptionPowerFunction(const Ptr<const IFunction<WpHz, math::Domain<simtime_t, Hz>>>& transmissionPowerFunction, const Ptr<const IFunction<double, Domain<Quaternion>>>& transmitterAntennaGainFunction, const Ptr<const IFunction<double, Domain<mps, m, Hz>>>& pathLossFunction, const Ptr<const IFunction<double, Domain<m, m, m, m, m, m, Hz>>>& obstacleLossFunction, const Point<m, m, m> startPosition, const Quaternion startOrientation, const mps propagationSpeed, const Hz frequencyQuantization) :
+    ReceptionPowerFunction(const Ptr<const IFunction<WpHz, Domain<simtime_t, Hz>>>& transmissionPowerFunction, const Ptr<const IFunction<double, Domain<Quaternion>>>& transmitterAntennaGainFunction, const Ptr<const IFunction<double, Domain<mps, m, Hz>>>& pathLossFunction, const Ptr<const IFunction<double, Domain<m, m, m, m, m, m, Hz>>>& obstacleLossFunction, const Point<m, m, m> startPosition, const Quaternion startOrientation, const mps propagationSpeed, const Hz frequencyQuantization) :
         transmissionPowerFunction(transmissionPowerFunction), transmitterAntennaGainFunction(transmitterAntennaGainFunction), pathLossFunction(pathLossFunction), obstacleLossFunction(obstacleLossFunction), startPosition(startPosition), startOrientation(startOrientation), propagationSpeed(propagationSpeed), frequencyQuantization(frequencyQuantization) { }
 
     virtual const Point<m, m, m>& getStartPosition() const { return startPosition; }
@@ -161,11 +161,11 @@ class INET_API ReceptionPowerFunction : public FunctionBase<WpHz, Domain<m, m, m
                         Interval<m, m, m, simtime_t, Hz> i3(
                             Point<m, m, m, simtime_t, Hz>(std::get<0>(lower), std::get<1>(lower), std::get<2>(lower), std::get<0>(i2.getLower()) + propagationTime, std::get<1>(i2.getLower())),
                             Point<m, m, m, simtime_t, Hz>(std::get<0>(upper), std::get<1>(upper), std::get<2>(upper), std::get<0>(i2.getUpper()) + propagationTime, std::get<1>(i2.getUpper())));
-                        if (auto cg = dynamic_cast<const ConstantFunction<WpHz, math::Domain<simtime_t, Hz>> *>(g)) {
+                        if (auto cg = dynamic_cast<const ConstantFunction<WpHz, Domain<simtime_t, Hz>> *>(g)) {
                             ConstantFunction<WpHz, Domain<m, m, m, simtime_t, Hz>> h(cg->getConstantValue() * attenuation);
                             f(i3, &h);
                         }
-                        else if (auto lg = dynamic_cast<const LinearInterpolatedFunction<WpHz, math::Domain<simtime_t, Hz>> *>(g)) {
+                        else if (auto lg = dynamic_cast<const LinearInterpolatedFunction<WpHz, Domain<simtime_t, Hz>> *>(g)) {
                             LinearInterpolatedFunction<WpHz, Domain<m, m, m, simtime_t, Hz>> h(i3.getLower(), i3.getUpper(), lg->getValue(i2.getLower()) * attenuation, lg->getValue(i2.getUpper()) * attenuation, lg->getDimension() + 3);
                             f(i3, &h);
                         }
