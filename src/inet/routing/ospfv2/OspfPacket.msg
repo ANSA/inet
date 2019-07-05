@@ -102,7 +102,7 @@ class OspfLsaHeader extends cObject
     LsaType lsType = static_cast<LsaType>(-1);
     Ipv4Address linkStateID;
     Ipv4Address advertisingRouter;
-    long lsSequenceNumber = 0;
+    uint32_t lsSequenceNumber = 0;
     uint16_t lsCrc = 0;
     CrcMode lsCrcMode = CRC_MODE_UNDEFINED;
     unsigned short lsaLength = 0;
@@ -180,6 +180,7 @@ class OspfSummaryLsa extends OspfLsa
 
 struct ExternalTosInfo
 {
+    // TODO: tosData (?)
     unsigned short tos;
     bool E_ExternalMetricType = false;
     unsigned long routeCost = 1;
