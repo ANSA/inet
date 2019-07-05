@@ -60,7 +60,7 @@ class INET_API Interval
 
     const Point<T ...>& getLower() const { return lower; }
     const Point<T ...>& getUpper() const { return upper; }
-    unsigned int isClosed() const { return closed; }
+    unsigned int getClosed() const { return closed; }
 
     bool contains(const Point<T ...>& p) const {
         return lower <= p && p <= upper;

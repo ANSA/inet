@@ -438,20 +438,21 @@ class INET_API OrthogonalCombinatorFunction : public FunctionBase<R, Domain<X, Y
     }
 
     virtual void partition(const Interval<X, Y>& i, const std::function<void (const Interval<X, Y>&, const IFunction<R, Domain<X, Y>> *)> h) const override {
-        Interval<X> ix(Point<X>(std::get<0>(i.getLower())), Point<X>(std::get<0>(i.getUpper())));
-        Interval<Y> iy(Point<Y>(std::get<1>(i.getLower())), Point<Y>(std::get<1>(i.getUpper())));
+        Interval<X> ix(Point<X>(std::get<0>(i.getLower())), Point<X>(std::get<0>(i.getUpper())), (i.getClosed() & 0b10) >> 1);
+        Interval<Y> iy(Point<Y>(std::get<1>(i.getLower())), Point<Y>(std::get<1>(i.getUpper())), (i.getClosed() & 0b01) >> 0);
         f->partition(ix, [&] (const Interval<X>& ixf, const IFunction<R, Domain<X>> *if1) {
             g->partition(iy, [&] (const Interval<Y>& iyg, const IFunction<double, Domain<Y>> *if2) {
                 Point<X, Y> lower(std::get<0>(ixf.getLower()), std::get<0>(iyg.getLower()));
                 Point<X, Y> upper(std::get<0>(ixf.getUpper()), std::get<0>(iyg.getUpper()));
+                unsigned int closed = (ixf.getClosed() << 1) | (iyg.getClosed() << 0);
                 if (auto cif1 = dynamic_cast<const ConstantFunction<R, Domain<X>> *>(if1)) {
                     if (auto cif2 = dynamic_cast<const ConstantFunction<double, Domain<Y>> *>(if2)) {
                         ConstantFunction<R, Domain<X, Y>> g(cif1->getConstantValue() * cif2->getConstantValue());
-                        h(Interval<X, Y>(lower, upper), &g);
+                        h(Interval<X, Y>(lower, upper, closed), &g);
                     }
                     else if (auto lif2 = dynamic_cast<const LinearInterpolatedFunction<double, Domain<Y>> *>(if2)) {
                         LinearInterpolatedFunction<R, Domain<X, Y>> g(lower, upper, lif2->getValue(iyg.getLower()) * cif1->getConstantValue(), lif2->getValue(iyg.getUpper()) * cif1->getConstantValue(), 1);
-                        h(Interval<X, Y>(lower, upper), &g);
+                        h(Interval<X, Y>(lower, upper, closed), &g);
                     }
                     else
                         throw cRuntimeError("TODO");
@@ -459,7 +460,7 @@ class INET_API OrthogonalCombinatorFunction : public FunctionBase<R, Domain<X, Y
                 else if (auto lif1 = dynamic_cast<const LinearInterpolatedFunction<R, Domain<X>> *>(if1)) {
                     if (auto cif2 = dynamic_cast<const ConstantFunction<double, Domain<Y>> *>(if2)) {
                         LinearInterpolatedFunction<R, Domain<X, Y>> g(lower, upper, lif1->getValue(ixf.getLower()) * cif2->getConstantValue(), lif1->getValue(ixf.getUpper()) * cif2->getConstantValue(), 0);
-                        h(Interval<X, Y>(lower, upper), &g);
+                        h(Interval<X, Y>(lower, upper, closed), &g);
                     }
                     else {
                         // QuadraticFunction<double, Domain<X, Y>> g(); // TODO:
@@ -488,16 +489,16 @@ class INET_API ShiftFunction : public FunctionBase<R, D>
     }
 
     virtual void partition(const typename D::I& i, const std::function<void (const typename D::I&, const IFunction<R, D> *)> g) const override {
-        f->partition(typename D::I(i.getLower() - s, i.getUpper() - s), [&] (const typename D::I& j, const IFunction<R, D> *jf) {
+        f->partition(typename D::I(i.getLower() - s, i.getUpper() - s, i.getClosed()), [&] (const typename D::I& j, const IFunction<R, D> *jf) {
             if (auto cjf = dynamic_cast<const ConstantFunction<R, D> *>(jf))
-                g(typename D::I(j.getLower() + s, j.getUpper() + s), jf);
+                g(typename D::I(j.getLower() + s, j.getUpper() + s, j.getClosed()), jf);
             else if (auto ljf = dynamic_cast<const LinearInterpolatedFunction<R, D> *>(jf)) {
                 LinearInterpolatedFunction<R, D> h(j.getLower() + s, j.getUpper() + s, ljf->getValue(j.getLower()), ljf->getValue(j.getUpper()), ljf->getDimension());
-                g(typename D::I(j.getLower() + s, j.getUpper() + s), &h);
+                g(typename D::I(j.getLower() + s, j.getUpper() + s, j.getClosed()), &h);
             }
             else {
                 ShiftFunction h(const_cast<IFunction<R, D> *>(jf)->shared_from_this(), s);
-                g(typename D::I(j.getLower() + s, j.getUpper() + s), &h);
+                g(typename D::I(j.getLower() + s, j.getUpper() + s, j.getClosed()), &h);
             }
         });
     }
@@ -842,6 +843,74 @@ class INET_API SumFunction : public FunctionBase<R, D>
     }
 };
 
+template<typename R, typename X, typename Y, int DIMS, typename RI>
+class IntegratedFunction<R, Domain<X, Y>, DIMS, RI, Domain<X>> : public FunctionBase<RI, Domain<X>>
+{
+    const Ptr<const IFunction<R, Domain<X, Y>>> f;
+
+  public:
+    IntegratedFunction(const Ptr<const IFunction<R, Domain<X, Y>>>& f): f(f) { }
+
+    virtual RI getValue(const Point<X>& p) const override {
+        Point<X, Y> l1(std::get<0>(p), getLowerBoundary<Y>());
+        Point<X, Y> u1(std::get<0>(p), getUpperBoundary<Y>());
+        RI ri(0);
+        Interval<X, Y> i1(l1, u1, DIMS);
+        f->partition(i1, [&] (const Interval<X, Y>& i2, const IFunction<R, Domain<X, Y>> *g) {
+            R r = g->getIntegral(i2);
+            ri += RI(toDouble(r));
+        });
+        return ri;
+    }
+
+    virtual void partition(const Interval<X>& i, std::function<void (const Interval<X>&, const IFunction<RI, Domain<X>> *)> g) const override {
+        Point<X, Y> l1(std::get<0>(i.getLower()), getLowerBoundary<Y>());
+        Point<X, Y> u1(std::get<0>(i.getUpper()), getUpperBoundary<Y>());
+        Interval<X, Y> i1(l1, u1);
+        std::set<X> xs;
+        f->partition(i1, [&] (const Interval<X, Y>& i2, const IFunction<R, Domain<X, Y>> *h) {
+            xs.insert(std::get<0>(i2.getLower()));
+            xs.insert(std::get<0>(i2.getUpper()));
+        });
+        bool first = true;
+        X xLower;
+        for (auto it : xs) {
+            X xUpper = it;
+            if (first)
+                first = false;
+            else {
+                RI ri(0);
+                // NOTE: use the lower X for both interval ends, because we assume a constant function and intervals are closed at the lower end
+                Point<X, Y> l3(xLower, getLowerBoundary<Y>());
+                Point<X, Y> u3(xLower, getUpperBoundary<Y>());
+                Interval<X, Y> i3(l3, u3, DIMS);
+                f->partition(i3, [&] (const Interval<X, Y>& i4, const IFunction<R, Domain<X, Y>> *h) {
+                    if (dynamic_cast<const ConstantFunction<R, Domain<X, Y>> *>(h)) {
+                        R r = h->getIntegral(i4);
+                        ri += RI(toDouble(r));
+                    }
+                    else if (auto lh = dynamic_cast<const LinearInterpolatedFunction<R, Domain<X, Y>> *>(h)) {
+                        if (lh->getDimension() == 1) {
+                            R r = h->getIntegral(i4);
+                            ri += RI(toDouble(r));
+                        }
+                        else
+                            throw cRuntimeError("TODO");
+                    }
+                    else
+                        throw cRuntimeError("TODO");
+                });
+                ConstantFunction<RI, Domain<X>> h(ri);
+                Point<X> l5(xLower);
+                Point<X> u5(xUpper);
+                Interval<X> i5(l5, u5);
+                g(i5, &h);
+            }
+            xLower = xUpper;
+        }
+    }
+};
+
 template<typename R, typename D, int DIMS, typename RI, typename DI>
 class IntegratedFunction : public FunctionBase<RI, DI>
 {
@@ -865,37 +934,7 @@ class IntegratedFunction : public FunctionBase<RI, DI>
     }
 
     virtual void partition(const typename DI::I& i, std::function<void (const typename DI::I&, const IFunction<RI, DI> *)> g) const override {
-        const auto& l = i.getLower();
-        const auto& u = i.getUpper();
-        auto l1 = D::P::getLowerBoundaries();
-        auto u1 = D::P::getUpperBoundaries();
-        l.template copyTo<typename D::P, DIMS>(l1);
-        u.template copyTo<typename D::P, DIMS>(u1);
-        typename D::I i1(l1, u1, ~DIMS);
-        f->partition(i1, [&] (const typename D::I& i2, const IFunction<R, D> *h) {
-            if (dynamic_cast<const ConstantFunction<R, D> *>(h)) {
-                auto l3 = i2.getLower();
-                auto u3 = i2.getUpper();
-                auto z = DI::P::getZero();
-                z.template copyTo<typename D::P, DIMS>(l3);
-                z.template copyTo<typename D::P, DIMS>(u3);
-                typename D::I i3(l3, u3, DIMS);
-                ConstantFunction<RI, DI> i(RI(toDouble(h->getIntegral(i3))));
-                auto l4 = DI::P::getZero();
-                auto u4 = DI::P::getZero();
-                l4.template copyFrom<typename D::P, DIMS>(i2.getLower());
-                u4.template copyFrom<typename D::P, DIMS>(i2.getUpper());
-                typename DI::I i4(l4, u4);
-                g(i4, &i);
-            }
-            else if (dynamic_cast<const LinearInterpolatedFunction<R, D> *>(h)) {
-//                // LinearInterpolatedFunction<R, E> i(h->getIntegral(..., ..., 0b01), h->getIntegral(..., ..., 0b01));
-//                // g(l3, u3, &i);
-                throw cRuntimeError("TODO");
-            }
-            else
-                throw cRuntimeError("TODO");
-        });
+        throw cRuntimeError("TODO");
     }
 };
 
