@@ -43,7 +43,6 @@ void OspfPacketSerializer::serialize(MemoryOutputStream& stream, const Ptr<const
             stream.writeUint32Be(helloPacket->getRouterDeadInterval());
             stream.writeIpv4Address(helloPacket->getDesignatedRouter());
             stream.writeIpv4Address(helloPacket->getBackupDesignatedRouter());
-            // iterate over each neighbor and write to stream
             for (size_t i = 0; i < helloPacket->getNeighborArraySize(); ++i) {
                 stream.writeIpv4Address(helloPacket->getNeighbor(i));
             }
@@ -59,7 +58,6 @@ void OspfPacketSerializer::serialize(MemoryOutputStream& stream, const Ptr<const
             stream.writeBit(options.M_More);
             stream.writeBit(options.MS_MasterSlave);
             stream.writeUint32Be(ddPacket->getDdSequenceNumber());
-            // iterate over each LSA header and write to stream
             for (unsigned int i = 0; i < ddPacket->getLsaHeadersArraySize(); ++i) {
                 serializeLsaHeader(stream, ddPacket->getLsaHeaders(i));
             }
@@ -67,7 +65,6 @@ void OspfPacketSerializer::serialize(MemoryOutputStream& stream, const Ptr<const
         }
         case LINKSTATE_REQUEST_PACKET: {
             const auto& requestPacket = staticPtrCast<const OspfLinkStateRequestPacket>(ospfPacket);
-            // iterate over each LS request and write to stream
             for (unsigned int i = 0; i < requestPacket->getRequestsArraySize(); ++i) {
                 auto& req = requestPacket->getRequests(i);
                 stream.writeUint32Be(req.lsType);
@@ -82,7 +79,29 @@ void OspfPacketSerializer::serialize(MemoryOutputStream& stream, const Ptr<const
             for (size_t i = 0; i < updatePacket->getOspfLSAsArraySize(); ++i) {
                 const auto& ospfLSAs = updatePacket->getOspfLSAs(i);
                 auto& lsaHeader = ospfLSAs->getHeader();
-                serializeLsaHeader(stream, lsaHeader);
+                //serializeLsaHeader(stream, lsaHeader);
+                //////////////////////////////////////////////////////////////////////////
+                // Temporary fix (was: serializeLsaHeader(stream, lsaHeader);):
+                stream.writeUint16Be(lsaHeader.getLsAge());
+                serializeOspfOptions(stream, lsaHeader.getLsOptions());
+                stream.writeByte(lsaHeader.getLsType());
+                stream.writeIpv4Address(lsaHeader.getLinkStateID());
+                stream.writeIpv4Address(lsaHeader.getAdvertisingRouter());
+                stream.writeUint32Be(lsaHeader.getLsSequenceNumber());
+                stream.writeUint16Be(lsaHeader.getLsCrc());
+                if (lsaHeader.getLsType() == AS_EXTERNAL_LSA_TYPE) {
+                    const OspfAsExternalLsa* asExternalLsa = static_cast<const OspfAsExternalLsa*>(ospfLSAs);
+                    int size = (asExternalLsa->getContents().getExternalTOSInfoArraySize()) * OSPF_ASEXTERNALLSA_TOS_INFO_LENGTH.get() + OSPF_LSA_HEADER_LENGTH.get() + OSPF_ASEXTERNALLSA_HEADER_LENGTH.get();
+                    stream.writeUint16Be(size);
+                }
+                else if (lsaHeader.getLsType() == SUMMARYLSA_NETWORKS_TYPE || lsaHeader.getLsType() == SUMMARYLSA_ASBOUNDARYROUTERS_TYPE) {
+                    const OspfSummaryLsa* summaryLsa = static_cast<const OspfSummaryLsa*>(ospfLSAs);
+                    int size = (summaryLsa->getTosDataArraySize() * OSPF_TOS_LENGTH.get() + OSPF_LSA_HEADER_LENGTH.get() + OSPF_NETWORKLSA_MASK_LENGTH.get() + 4);
+                    stream.writeUint16Be(size);
+                }
+                else
+                    stream.writeUint16Be(lsaHeader.getLsaLength());
+                //////////////////////////////////////////////////////////////////////////
                 LsaType type = lsaHeader.getLsType();
                 switch (type) {
                     case ROUTERLSA_TYPE: {
@@ -95,7 +114,8 @@ void OspfPacketSerializer::serialize(MemoryOutputStream& stream, const Ptr<const
                         serializeNetworkLsa(stream, *networkLsa);
                         break;
                     }
-                    case SUMMARYLSA_NETWORKS_TYPE: {
+                    case SUMMARYLSA_NETWORKS_TYPE:
+                    case SUMMARYLSA_ASBOUNDARYROUTERS_TYPE: {
                         const OspfSummaryLsa* summaryLsa = static_cast<const OspfSummaryLsa*>(ospfLSAs);
                         serializeSummaryLsa(stream, *summaryLsa);
                         break;
@@ -113,7 +133,6 @@ void OspfPacketSerializer::serialize(MemoryOutputStream& stream, const Ptr<const
         }
         case LINKSTATE_ACKNOWLEDGEMENT_PACKET: {
             const auto& ackPacket = staticPtrCast<const OspfLinkStateAcknowledgementPacket>(ospfPacket);
-            // iterate over each LSA header and write to stream
             for (unsigned int i = 0; i < ackPacket->getLsaHeadersArraySize(); ++i) {
                 serializeLsaHeader(stream, ackPacket->getLsaHeaders(i));
             }
@@ -210,7 +229,8 @@ const Ptr<Chunk> OspfPacketSerializer::deserialize(MemoryInputStream& stream) co
                         updatePacket->setOspfLSAs(i, networkLsa);
                         break;
                     }
-                    case SUMMARYLSA_NETWORKS_TYPE: {
+                    case SUMMARYLSA_NETWORKS_TYPE:
+                    case SUMMARYLSA_ASBOUNDARYROUTERS_TYPE: {
                         OspfSummaryLsa *summaryLsa = new OspfSummaryLsa();
                         summaryLsa->setHeader(*lsaHeader);
                         deserializeSummaryLsa(stream, updatePacket, *summaryLsa);
@@ -263,7 +283,6 @@ void OspfPacketSerializer::serializeOspfHeader(MemoryOutputStream& stream, const
         throw cRuntimeError("Cannot serialize Ospf header without turned off or properly computed CRC, try changing the value of crcMode parameter for Ospf");
     stream.writeUint16Be(ospfPacket->getCrc());
     stream.writeUint16Be(ospfPacket->getAuthenticationType());
-    // iterate over each authentication data and write to stream
     for (unsigned int i = 0; i < 8; ++i) {
         stream.writeByte(ospfPacket->getAuthentication(i));
     }
