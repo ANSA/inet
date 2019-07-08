@@ -627,9 +627,12 @@ class INET_API AdditionFunction : public FunctionBase<R, D>
                         simplifyAndCall(i2, &g, f);
                     }
                     else if (auto lif2 = dynamic_cast<const LinearInterpolatedFunction<R, D> *>(if2)) {
-                        ASSERT(lif1->getDimension() == lif2->getDimension());
-                        LinearInterpolatedFunction<R, D> g(i2.getLower(), i2.getUpper(), lif1->getValue(i2.getLower()) + lif2->getValue(i2.getLower()), lif1->getValue(i2.getUpper()) + lif2->getValue(i2.getUpper()), lif1->getDimension());
-                        simplifyAndCall(i2, &g, f);
+                        if (lif1->getDimension() == lif2->getDimension()) {
+                            LinearInterpolatedFunction<R, D> g(i2.getLower(), i2.getUpper(), lif1->getValue(i2.getLower()) + lif2->getValue(i2.getLower()), lif1->getValue(i2.getUpper()) + lif2->getValue(i2.getUpper()), lif1->getDimension());
+                            simplifyAndCall(i2, &g, f);
+                        }
+                        else
+                            throw cRuntimeError("TODO");
                     }
                     else
                         throw cRuntimeError("TODO");
@@ -676,9 +679,12 @@ class INET_API SubtractionFunction : public FunctionBase<R, D>
                         simplifyAndCall(i2, &g, f);
                     }
                     else if (auto lif2 = dynamic_cast<const LinearInterpolatedFunction<R, D> *>(if2)) {
-                        ASSERT(lif1->getDimension() == lif2->getDimension());
-                        LinearInterpolatedFunction<R, D> g(i2.getLower(), i2.getUpper(), lif1->getValue(i2.getLower()) - lif2->getValue(i2.getLower()), lif1->getValue(i2.getUpper()) - lif2->getValue(i2.getUpper()), lif1->getDimension());
-                        simplifyAndCall(i2, &g, f);
+                        if (lif1->getDimension() == lif2->getDimension()) {
+                            LinearInterpolatedFunction<R, D> g(i2.getLower(), i2.getUpper(), lif1->getValue(i2.getLower()) - lif2->getValue(i2.getLower()), lif1->getValue(i2.getUpper()) - lif2->getValue(i2.getUpper()), lif1->getDimension());
+                            simplifyAndCall(i2, &g, f);
+                        }
+                        else
+                            throw cRuntimeError("TODO");
                     }
                     else
                         throw cRuntimeError("TODO");
@@ -773,9 +779,12 @@ class INET_API DivisionFunction : public FunctionBase<double, D>
                         simplifyAndCall(i2, &g, f);
                     }
                     else if (auto lif2 = dynamic_cast<const LinearInterpolatedFunction<R, D> *>(if2)) {
-                        ASSERT(lif1->getDimension() == lif2->getDimension());
-                        ReciprocalFunction<double, D> g(lif1->getA(), lif1->getB(), lif2->getA(), lif2->getB(), lif2->getDimension());
-                        simplifyAndCall(i2, &g, f);
+                        if (lif1->getDimension() == lif2->getDimension()) {
+                            ReciprocalFunction<double, D> g(lif1->getA(), lif1->getB(), lif2->getA(), lif2->getB(), lif2->getDimension());
+                            simplifyAndCall(i2, &g, f);
+                        }
+                        else
+                            throw cRuntimeError("TODO");
                     }
                     else
                         throw cRuntimeError("TODO");
@@ -978,18 +987,18 @@ class INET_API MemoizedFunction : public FunctionBase<R, D>
 };
 
 template<typename R, typename D>
-void simplifyAndCall(const typename D::I& i, const IFunction<R, D> *f, const std::function<void (const typename D::I&, const IFunction<R, D> *)> g) {
-    // TODO: simplify f if possible and call g with the result
-    if (auto lf = dynamic_cast<const LinearInterpolatedFunction<R, D> *>(f)) {
-        if (lf->getRLower() == lf->getRUpper()) {
-            ConstantFunction<R, D> h(lf->getRLower());
-            g(i, &h);
-        }
-        else
-            g(i, f);
+void simplifyAndCall(const typename D::I& i, const LinearInterpolatedFunction<R, D> *f, const std::function<void (const typename D::I&, const IFunction<R, D> *)> g) {
+    if (f->getRLower() == f->getRUpper()) {
+        ConstantFunction<R, D> h(f->getRLower());
+        g(i, &h);
     }
     else
         g(i, f);
+}
+
+template<typename R, typename D>
+void simplifyAndCall(const typename D::I& i, const IFunction<R, D> *f, const std::function<void (const typename D::I&, const IFunction<R, D> *)> g) {
+    g(i, f);
 }
 
 } // namespace math

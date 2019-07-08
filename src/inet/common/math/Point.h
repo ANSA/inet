@@ -43,29 +43,33 @@ inline double getUpperBoundary() { return INFINITY; }
 template<>
 inline simtime_t getUpperBoundary() { return SimTime::getMaxTime() / 2; }
 
+namespace internal {
+
+template<int DIMS, int SIZE>
+struct bits_to_indices_sequence { };
+
+template<>
+struct bits_to_indices_sequence<0b0, 0> { typedef integer_sequence<size_t> type; };
+
+template<>
+struct bits_to_indices_sequence<0b0, 1> { typedef integer_sequence<size_t> type; };
+
+template<>
+struct bits_to_indices_sequence<0b00, 2> { typedef integer_sequence<size_t, 0> type; };
+template<>
+struct bits_to_indices_sequence<0b01, 2> { typedef integer_sequence<size_t, 1> type; };
+template<>
+struct bits_to_indices_sequence<0b10, 2> { typedef integer_sequence<size_t, 0> type; };
+
 template<typename S, size_t ... SIS, typename D, size_t ... DIS>
 void copyTupleElements(const S& source, integer_sequence<size_t, SIS ...>, D& destination, integer_sequence<size_t, DIS ...>) {
     std::initializer_list<double>({ toDouble(std::get<DIS>(destination) = std::get<SIS>(source)) ... });
 }
 
 template<int DIMS, int SIZE>
-struct bitsToIndices { };
+using make_bits_to_indices_sequence = typename bits_to_indices_sequence<DIMS, SIZE>::type;
 
-template<>
-struct bitsToIndices<0b0, 0> { typedef integer_sequence<size_t> type; };
-
-template<>
-struct bitsToIndices<0b0, 1> { typedef integer_sequence<size_t> type; };
-
-template<>
-struct bitsToIndices<0b00, 2> { typedef integer_sequence<size_t, 0> type; };
-template<>
-struct bitsToIndices<0b01, 2> { typedef integer_sequence<size_t, 1> type; };
-template<>
-struct bitsToIndices<0b10, 2> { typedef integer_sequence<size_t, 0> type; };
-
-template<int DIMS, int SIZE>
-using make_bits_to_indices = typename bitsToIndices<DIMS, SIZE>::type;
+}
 
 template<typename ... T>
 class INET_API Point : public std::tuple<T ...>
@@ -156,12 +160,12 @@ class INET_API Point : public std::tuple<T ...>
 
     template<typename P, int DIMS>
     void copyTo(P& p) const {
-        copyTupleElements(*this, index_sequence_for<T ...>{}, p, make_bits_to_indices<DIMS, std::tuple_size<typename P::type>::value>{});
+        internal::copyTupleElements(*this, index_sequence_for<T ...>{}, p, internal::make_bits_to_indices_sequence<DIMS, std::tuple_size<typename P::type>::value>{});
     }
 
     template<typename P, int DIMS>
     void copyFrom(const P& p) {
-        copyTupleElements(p, make_bits_to_indices<DIMS, std::tuple_size<typename P::type>::value>{}, *this, index_sequence_for<T ...>{});
+        internal::copyTupleElements(p, internal::make_bits_to_indices_sequence<DIMS, std::tuple_size<typename P::type>::value>{}, *this, index_sequence_for<T ...>{});
     }
 
     static Point<T ...> getZero() {

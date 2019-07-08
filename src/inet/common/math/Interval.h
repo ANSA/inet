@@ -30,7 +30,7 @@ class INET_API Interval
   protected:
     Point<T ...> lower;
     Point<T ...> upper;
-    unsigned int closed;
+    unsigned int closed; // 1 bit per dimension, upper end (lower end is always closed in all dimensions)
 
   protected:
     template<size_t ... IS>
