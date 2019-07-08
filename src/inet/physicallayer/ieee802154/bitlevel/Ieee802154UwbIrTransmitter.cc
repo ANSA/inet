@@ -133,6 +133,7 @@ void Ieee802154UwbIrTransmitter::generatePulse(std::map<simtime_t, WpHz>& data, 
     data[time] = WpHz(0);
     time += chip / 2;
     // Maximum point at symbol half (triangular pulse)
+    // TODO: polarity doesn't really make sense this way!?
     data[time] = W(peak * polarity) / GHz(10.6 - 3.1);
     time += chip / 2;
     data[time] = WpHz(0);
@@ -158,6 +159,8 @@ Ptr<const IFunction<WpHz, Domain<simtime_t, Hz>>> Ieee802154UwbIrTransmitter::ge
     // data start time relative to signal->getReceptionStart();
     simtime_t dataStart = cfg.preambleLength; // = Tsync + Tsfd
     std::map<simtime_t, WpHz> data;
+    data[getLowerBoundary<simtime_t>()] = WpHz(0);
+    data[getUpperBoundary<simtime_t>()] = WpHz(0);
     simtime_t time = 0;
 
     generateSyncPreamble(data, time, startTime);

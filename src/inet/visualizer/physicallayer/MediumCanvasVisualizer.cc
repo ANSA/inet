@@ -180,7 +180,8 @@ void MediumCanvasVisualizer::refreshSpectrumFigure(const cModule *module, PlotFi
         figure->setMaxX(GHz(maxFrequency).get());
         figure->setXTickCount(3);
         for (Hz frequency = minFrequency; frequency < maxFrequency; frequency += stepFrequency) {
-            Point<m, m, m, simtime_t, Hz> p(m(position.x), m(position.y), m(position.z), startTime, frequency);
+            Point<m, m, m, simtime_t, Hz> pLower(m(position.x), m(position.y), m(position.z), startTime, frequency);
+            Point<m, m, m, simtime_t, Hz> pUpper(m(position.x), m(position.y), m(position.z), endTime, frequency + stepFrequency);
             WpHz totalPower;
             WpHz signalPower;
             if (antenna != nullptr && (antenna->getGain()->getMinGain() != 1 || antenna->getGain()->getMaxGain() != 1)) {
@@ -200,15 +201,15 @@ void MediumCanvasVisualizer::refreshSpectrumFigure(const cModule *module, PlotFi
                             gain = antenna->getGain()->computeGain(antennaLocalDirection);
                         }
                     }
-                    auto receptionPower = gain * f->getValue(p);
+                    auto receptionPower = gain * f->getMax(Interval<m, m, m, simtime_t, Hz>(pLower, pUpper));
                     if (rf == receptionPowerFunction)
                         signalPower = receptionPower;
                     totalPower += receptionPower;
                 }
             }
             else {
-                totalPower = mediumPowerFunction->getValue(p);
-                signalPower = receptionPowerFunction != nullptr ? receptionPowerFunction->getValue(p) : WpHz(0);
+                totalPower = mediumPowerFunction->getMax(Interval<m, m, m, simtime_t, Hz>(pLower, pUpper));
+                signalPower = receptionPowerFunction != nullptr ? receptionPowerFunction->getMax(Interval<m, m, m, simtime_t, Hz>(pLower, pUpper)) : WpHz(0);
             }
             if (transmission == nullptr)
                 figure->setValue(0, GHz(frequency).get(), wpHz2dBmWpMHz(WpHz(totalPower).get()));
@@ -220,12 +221,14 @@ void MediumCanvasVisualizer::refreshSpectrumFigure(const cModule *module, PlotFi
         Point<m, m, m, simtime_t, Hz> lower(m(position.x), m(position.y), m(position.z), startTime, spectrumMinFrequency);
         Point<m, m, m, simtime_t, Hz> upper(m(position.x), m(position.y), m(position.z), endTime, spectrumMaxFrequency);
         Interval<m, m, m, simtime_t, Hz> interval(lower, upper);
-        WpHz minPower = mediumPowerFunction->getMin(interval);
-        if (minPower > WpHz(0) && spectrumAutoPowerAxis)
-            nonCostThisPtr->spectrumMinPower = std::min(spectrumMinPower, minPower);
-        WpHz maxPower = mediumPowerFunction->getMax(interval);
-        if (maxPower > WpHz(0) && spectrumAutoPowerAxis)
-            nonCostThisPtr->spectrumMaxPower = std::max(spectrumMaxPower, maxPower);
+        if (spectrumAutoPowerAxis) {
+            mediumPowerFunction->partition(interval, [&] (const Interval<m, m, m, simtime_t, Hz>& i, const IFunction<WpHz, Domain<m, m, m, simtime_t, Hz>> *f) {
+                WpHz minPower = f->getMin(i);
+                if (minPower > WpHz(0))
+                    nonCostThisPtr->spectrumMinPower = std::min(spectrumMinPower, minPower);
+            });
+            nonCostThisPtr->spectrumMaxPower = std::max(spectrumMaxPower, mediumPowerFunction->getMax(interval));
+        }
         double minValue = wpHz2dBmWpMHz(WpHz(spectrumMinPower).get());
         double maxValue = wpHz2dBmWpMHz(WpHz(spectrumMaxPower).get());
         if (minValue < maxValue) {

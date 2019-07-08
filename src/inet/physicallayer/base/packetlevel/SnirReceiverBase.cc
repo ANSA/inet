@@ -45,7 +45,7 @@ std::ostream& SnirReceiverBase::printToStream(std::ostream& stream, int level) c
 
 bool SnirReceiverBase::computeIsReceptionSuccessful(const IListening *listening, const IReception *reception, IRadioSignal::SignalPart part, const IInterference *interference, const ISnir *snir) const
 {
-    return snir->getMin() > snirThreshold;
+    return snir->getMean() > snirThreshold;
 }
 
 } // namespace physicallayer

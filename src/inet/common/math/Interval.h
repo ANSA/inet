@@ -17,6 +17,7 @@
 #define __INET_MATH_INTERVAL_H_
 
 #include <functional>
+#include <numeric>
 #include "inet/common/math/Point.h"
 
 namespace inet {
@@ -34,24 +35,25 @@ class INET_API Interval
   protected:
     template<size_t ... IS>
     Interval<T ...> intersectImpl(const Interval<T ...>& o, integer_sequence<size_t, IS...>) const {
+        unsigned int b = 1 << (std::tuple_size<std::tuple<T ...>>::value - 1);
         Point<T ...> l( (std::max(std::get<IS>(lower), std::get<IS>(o.lower))) ... );
         Point<T ...> u( (std::min(std::get<IS>(upper), std::get<IS>(o.upper))) ... );
-        // TODO: closed bits based on upper <=> o.upper
-        return Interval<T ...>(l, u, closed | o.closed);
+        std::initializer_list<unsigned int> cs({ ((b >> IS) & (std::get<IS>(upper) == std::get<IS>(o.upper) ? closed & o.closed : (std::get<IS>(upper) < std::get<IS>(o.upper) ? closed : o.closed))) ... });
+        return Interval<T ...>(l, u, std::accumulate(cs.begin(), cs.end(), 0));
     }
 
     template<size_t ... IS>
     double getVolumeImpl(integer_sequence<size_t, IS...>) const {
         double result = 1;
-        int b = 1 << (std::tuple_size<std::tuple<T ...>>::value - 1);
+        unsigned int b = 1 << (std::tuple_size<std::tuple<T ...>>::value - 1);
         std::initializer_list<double>({ result *= (!(closed & (b >> IS)) ? toDouble(std::get<IS>(upper) - std::get<IS>(lower)) : (std::get<IS>(upper) == std::get<IS>(lower) ? 1 : throw cRuntimeError("Invalid arguments"))) ... });
         return std::abs(result);
     }
 
     template<size_t ... IS>
     bool isValidIntervalImpl(integer_sequence<size_t, IS...>) const {
-        int b = 1 << (std::tuple_size<std::tuple<T ...>>::value - 1);
-        std::initializer_list<bool> bs{ (!(closed & (b >> IS)) ? std::get<IS>(lower) < std::get<IS>(upper) : std::get<IS>(lower) <= std::get<IS>(upper)) ... };
+        unsigned int b = 1 << (std::tuple_size<std::tuple<T ...>>::value - 1);
+        std::initializer_list<bool> bs({ (!(closed & (b >> IS)) ? std::get<IS>(lower) < std::get<IS>(upper) : std::get<IS>(lower) <= std::get<IS>(upper)) ... });
         return std::all_of(bs.begin(), bs.end(), [] (bool b) { return b; });
     }
 

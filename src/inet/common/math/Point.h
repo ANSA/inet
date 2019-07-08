@@ -45,8 +45,7 @@ inline simtime_t getUpperBoundary() { return SimTime::getMaxTime() / 2; }
 
 template<typename S, size_t ... SIS, typename D, size_t ... DIS>
 void copyTupleElements(const S& source, integer_sequence<size_t, SIS ...>, D& destination, integer_sequence<size_t, DIS ...>) {
-    std::initializer_list<double> b{ toDouble(std::get<DIS>(destination) = std::get<SIS>(source)) ...};
-    (void)b;
+    std::initializer_list<double>({ toDouble(std::get<DIS>(destination) = std::get<SIS>(source)) ... });
 }
 
 template<int DIMS, int SIZE>
