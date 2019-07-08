@@ -477,6 +477,13 @@ bool OspfPacketSerializer::decerializeAsExternalLsa(MemoryInputStream& stream, O
     return true;
 }
 
+void OspfPacketSerializer::serializeLsa(MemoryOutputStream& stream, const OspfLsa& lsa)
+{
+    //TODO implementation
+    serializeLsaHeader(stream, lsa.getHeader());
+    throw cRuntimeError("not implemented yet");
+}
+
 uint8_t OspfPacketSerializer::ospfOptionToByte(const OspfOptions& options)
 {
     uint8_t c = 0;

@@ -28,7 +28,7 @@ namespace ospf {
  */
 class INET_API OspfPacketSerializer : public FieldsChunkSerializer
 {
-private:
+  private:
     static void serializeOspfHeader(MemoryOutputStream& stream, const IntrusivePtr<const OspfPacket>& ospfPacket);
     static uint16_t deserializeOspfHeader(MemoryInputStream& stream, IntrusivePtr<OspfPacket>& ospfPacket);
 
@@ -59,6 +59,9 @@ private:
 
   public:
     OspfPacketSerializer() : FieldsChunkSerializer() {}
+
+    static void serializeLsa(MemoryOutputStream& stream, const OspfLsa& routerLsa);
+    //TODO static ??? deserializeLsa(MemoryInputStream& stream, ???);
 };
 
 } // namespace ospf
