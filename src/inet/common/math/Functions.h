@@ -70,9 +70,6 @@ class INET_API FunctionBase : public IFunction<R, D>
         R result(getLowerBoundary<R>());
         this->partition(i, [&] (const typename D::I& i1, const IFunction<R, D> *f) {
             result = std::max(f->getMax(i1), result);
-            double d = toDouble(result);
-            if (d >= 5.2E-8 && d <= 5.3E-8)
-                std::cout << "HERE";
         });
         return result;
     }
@@ -136,7 +133,7 @@ class INET_API DomainLimitedFunction : public FunctionBase<R, D>
 
     virtual void partition(const typename D::I& i, const std::function<void (const typename D::I&, const IFunction<R, D> *)> g) const override {
         const auto& i1 = i.intersect(domain);
-        if (i1.isValid())
+        if (!i1.isEmpty())
             f->partition(i1, g);
     }
 };
@@ -187,17 +184,17 @@ class INET_API OneDimensionalBoxcarFunction : public FunctionBase<R, Domain<X>>
 
     virtual void partition(const Interval<X>& i, const std::function<void (const Interval<X>&, const IFunction<R, Domain<X>> *)> f) const override {
         const auto& i1 = i.intersect(Interval<X>(getLowerBoundary<X>(), Point<X>(lower)));
-        if (i1.isValid()) {
+        if (!i1.isEmpty()) {
             ConstantFunction<R, Domain<X>> g(R(0));
             f(i1, &g);
         }
         const auto& i2 = i.intersect(Interval<X>(Point<X>(lower), Point<X>(upper)));
-        if (i2.isValid()) {
+        if (!i2.isEmpty()) {
             ConstantFunction<R, Domain<X>> g(r);
             f(i2, &g);
         }
         const auto& i3 = i.intersect(Interval<X>(Point<X>(upper), getUpperBoundary<X>()));
-        if (i3.isValid()) {
+        if (!i3.isEmpty()) {
             ConstantFunction<R, Domain<X>> g(R(0));
             f(i3, &g);
         }
@@ -216,7 +213,7 @@ class INET_API TwoDimensionalBoxcarFunction : public FunctionBase<R, Domain<X, Y
 
   protected:
     void callf(const Interval<X, Y>& i, const std::function<void (const Interval<X, Y>&, const IFunction<R, Domain<X, Y>> *)> f, R r) const {
-        if (i.isValid()) {
+        if (!i.isEmpty()) {
             ConstantFunction<R, Domain<X, Y>> g(r);
             f(i, &g);
         }
@@ -345,16 +342,19 @@ class INET_API OneDimensionalInterpolatedFunction : public FunctionBase<R, Domai
         auto ut = rs.upper_bound(std::get<0>(i.getUpper()));
         if (lt->first > std::get<0>(i.getLower()))
             lt--;
-        for (auto it = lt; it != ut; it++) {
+        auto it = lt;
+        while (true) {
+            if (it == ut) break;
             auto jt = it;
             jt++;
+            if (jt == ut) break;
+
             auto i1 = i.intersect(Interval<X>(Point<X>(it->first), Point<X>(jt->first)));
-            if (i1.isValid()) {
+            if (!i1.isEmpty()) {
                 const auto interpolator = it->second.second;
                 if (dynamic_cast<const EitherInterpolator<X, R> *>(interpolator)) {
                     ConstantFunction<R, Domain<X>> g(it->second.first);
                     f(i1, &g);
-
                 }
                 else if (dynamic_cast<const SmallerInterpolator<X, R> *>(interpolator)) {
                     ConstantFunction<R, Domain<X>> g(it->second.first); // TODO: what about the ends?
@@ -371,6 +371,8 @@ class INET_API OneDimensionalInterpolatedFunction : public FunctionBase<R, Domai
                 else
                     throw cRuntimeError("TODO");
             }
+
+            it++;
         }
     }
 };

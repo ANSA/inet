@@ -34,12 +34,23 @@ class INET_API Interval
 
   protected:
     template<size_t ... IS>
+    void checkImpl(integer_sequence<size_t, IS...>) const {
+        std::initializer_list<bool> bs({ std::get<IS>(upper) < std::get<IS>(lower) ... });
+        if (std::any_of(bs.begin(), bs.end(), [] (bool b) { return b; }))
+            throw cRuntimeError("Invalid arguments");
+    }
+
+    template<size_t ... IS>
     Interval<T ...> intersectImpl(const Interval<T ...>& o, integer_sequence<size_t, IS...>) const {
         unsigned int b = 1 << (std::tuple_size<std::tuple<T ...>>::value - 1);
-        Point<T ...> l( (std::max(std::get<IS>(lower), std::get<IS>(o.lower))) ... );
-        Point<T ...> u( (std::min(std::get<IS>(upper), std::get<IS>(o.upper))) ... );
-        std::initializer_list<unsigned int> cs({ ((b >> IS) & (std::get<IS>(upper) == std::get<IS>(o.upper) ? closed & o.closed : (std::get<IS>(upper) < std::get<IS>(o.upper) ? closed : o.closed))) ... });
-        return Interval<T ...>(l, u, std::accumulate(cs.begin(), cs.end(), 0));
+        Point<T ...> l( std::max(std::get<IS>(lower), std::get<IS>(o.lower)) ... );
+        Point<T ...> u( std::min(std::get<IS>(upper), std::get<IS>(o.upper)) ... );
+        std::initializer_list<unsigned int> cs({ ((b >> IS) & (std::get<IS>(lower) > std::get<IS>(u) || std::get<IS>(upper) < std::get<IS>(l) ? 0 :
+                                                              (std::get<IS>(upper) == std::get<IS>(o.upper) ? (closed & o.closed) :
+                                                              (std::get<IS>(upper) < std::get<IS>(o.upper) ? closed : o.closed)))) ... });
+        Point<T ...> l1( std::min(std::get<IS>(upper), std::get<IS>(l)) ... );
+        Point<T ...> u1( std::max(std::get<IS>(lower), std::get<IS>(u)) ... );
+        return Interval<T ...>(l1, u1, std::accumulate(cs.begin(), cs.end(), 0));
     }
 
     template<size_t ... IS>
@@ -47,18 +58,20 @@ class INET_API Interval
         double result = 1;
         unsigned int b = 1 << (std::tuple_size<std::tuple<T ...>>::value - 1);
         std::initializer_list<double>({ result *= (!(closed & (b >> IS)) ? toDouble(std::get<IS>(upper) - std::get<IS>(lower)) : (std::get<IS>(upper) == std::get<IS>(lower) ? 1 : throw cRuntimeError("Invalid arguments"))) ... });
-        return std::abs(result);
+        return result;
     }
 
     template<size_t ... IS>
-    bool isValidIntervalImpl(integer_sequence<size_t, IS...>) const {
+    bool isEmptyIntervalImpl(integer_sequence<size_t, IS...>) const {
         unsigned int b = 1 << (std::tuple_size<std::tuple<T ...>>::value - 1);
-        std::initializer_list<bool> bs({ (!(closed & (b >> IS)) ? std::get<IS>(lower) < std::get<IS>(upper) : std::get<IS>(lower) <= std::get<IS>(upper)) ... });
-        return std::all_of(bs.begin(), bs.end(), [] (bool b) { return b; });
+        std::initializer_list<bool> bs({ ((closed & (b >> IS)) ? false : std::get<IS>(lower) == std::get<IS>(upper)) ... });
+        return std::any_of(bs.begin(), bs.end(), [] (bool b) { return b; });
     }
 
   public:
-    Interval(const Point<T ...>& lower, const Point<T ...>& upper, unsigned int closed = 0) : lower(lower), upper(upper), closed(closed) { }
+    Interval(const Point<T ...>& lower, const Point<T ...>& upper, unsigned int closed = 0) : lower(lower), upper(upper), closed(closed) {
+        checkImpl(index_sequence_for<T ...>{});
+    }
 
     const Point<T ...>& getLower() const { return lower; }
     const Point<T ...>& getUpper() const { return upper; }
@@ -76,8 +89,8 @@ class INET_API Interval
         return getVolumeImpl(index_sequence_for<T ...>{});
     }
 
-    bool isValid() const {
-        return isValidIntervalImpl(index_sequence_for<T ...>{});
+    bool isEmpty() const {
+        return isEmptyIntervalImpl(index_sequence_for<T ...>{});
     }
 
 };
