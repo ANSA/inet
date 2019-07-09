@@ -137,7 +137,7 @@ class INET_API ReceptionPowerFunction : public FunctionBase<WpHz, Domain<m, m, m
     virtual void partition(const Interval<m, m, m, simtime_t, Hz>& i, const std::function<void (const Interval<m, m, m, simtime_t, Hz>&, const IFunction<WpHz, Domain<m, m, m, simtime_t, Hz>> *)> f) const override {
         const auto& lower = i.getLower();
         const auto& upper = i.getUpper();
-        if (std::get<0>(lower) == std::get<0>(upper) && std::get<1>(lower) == std::get<1>(upper) && std::get<2>(lower) == std::get<2>(upper)) {
+        if (std::get<0>(lower) == std::get<0>(upper) && std::get<1>(lower) == std::get<1>(upper) && std::get<2>(lower) == std::get<2>(upper) && (i.getClosed() & 0b11100) == 0b11100) {
             Hz minFrequency = frequencyQuantization * floor(unit(std::get<4>(i.getLower()) / frequencyQuantization).get());
             Hz maxFrequency = frequencyQuantization * ceil(unit(std::get<4>(i.getUpper()) / frequencyQuantization).get());
             m x = std::get<0>(lower);
@@ -154,13 +154,14 @@ class INET_API ReceptionPowerFunction : public FunctionBase<WpHz, Domain<m, m, m
             for (Hz frequency = minFrequency; frequency < maxFrequency; frequency += frequencyQuantization) {
                 Point<simtime_t, Hz> l1(std::get<3>(lower) - propagationTime, std::max(std::get<4>(i.getLower()), frequency));
                 Point<simtime_t, Hz> u1(std::get<3>(upper) - propagationTime, std::min(std::get<4>(i.getUpper()), frequency + frequencyQuantization));
-                Interval<simtime_t, Hz> i1(l1, u1);
+                Interval<simtime_t, Hz> i1(l1, u1, i.getClosed() & 0b11);
                 double attenuation = getAttenuation(Point<m, m, m, simtime_t, Hz>(std::get<0>(lower), std::get<1>(lower), std::get<2>(lower), std::get<3>(lower), frequency));
                 if (i1.isValid()) {
                     transmissionPowerFunction->partition(i1, [&] (const Interval<simtime_t, Hz>& i2, const IFunction<WpHz, Domain<simtime_t, Hz>> *g) {
                         Interval<m, m, m, simtime_t, Hz> i3(
                             Point<m, m, m, simtime_t, Hz>(std::get<0>(lower), std::get<1>(lower), std::get<2>(lower), std::get<0>(i2.getLower()) + propagationTime, std::get<1>(i2.getLower())),
-                            Point<m, m, m, simtime_t, Hz>(std::get<0>(upper), std::get<1>(upper), std::get<2>(upper), std::get<0>(i2.getUpper()) + propagationTime, std::get<1>(i2.getUpper())));
+                            Point<m, m, m, simtime_t, Hz>(std::get<0>(upper), std::get<1>(upper), std::get<2>(upper), std::get<0>(i2.getUpper()) + propagationTime, std::get<1>(i2.getUpper())),
+                            0b11100 | i2.getClosed());
                         if (auto cg = dynamic_cast<const ConstantFunction<WpHz, Domain<simtime_t, Hz>> *>(g)) {
                             ConstantFunction<WpHz, Domain<m, m, m, simtime_t, Hz>> h(cg->getConstantValue() * attenuation);
                             f(i3, &h);

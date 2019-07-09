@@ -24,6 +24,8 @@ namespace inet {
 
 namespace physicallayer {
 
+using namespace inet::math;
+
 class INET_API DimensionalTransmitterBase : public virtual IPrintableObject
 {
   protected:

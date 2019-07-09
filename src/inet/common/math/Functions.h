@@ -70,6 +70,9 @@ class INET_API FunctionBase : public IFunction<R, D>
         R result(getLowerBoundary<R>());
         this->partition(i, [&] (const typename D::I& i1, const IFunction<R, D> *f) {
             result = std::max(f->getMax(i1), result);
+            double d = toDouble(result);
+            if (d >= 5.2E-8 && d <= 5.3E-8)
+                std::cout << "HERE";
         });
         return result;
     }

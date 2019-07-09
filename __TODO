@@ -1,3 +1,5 @@
+ - topic/packetapi
+ - revive unit tests
  - bandpass filter for noise, reception and SNIR
  - better error reporting when the radio doesn't provide the Ieee80211Mode to the MAC, e.g. when using the default UnitDiskRadio instead of the Ieee80211UnitDiskRadio, check for base classes
  - fix Ieee80211UnitDiskReceiver base class and initialize, solve diamond inheritance
