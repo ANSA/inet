@@ -240,21 +240,23 @@ class INET_API AntennaGainFunction : public IFunction<double, Domain<Quaternion>
     template<int DIMS, typename RI, typename DI>
     Ptr<const IFunction<RI, DI>> integrate() const { throw cRuntimeError("TODO"); }
 
-    virtual Interval<double> getRange() const { throw cRuntimeError("TODO"); }
-    virtual Interval<Quaternion> getDomain() const { throw cRuntimeError("TODO"); }
-    virtual Ptr<const IFunction<double, Domain<Quaternion>>> limitDomain(const Interval<Quaternion>& i) const { throw cRuntimeError("TODO"); }
+    virtual Interval<double> getRange() const override { throw cRuntimeError("TODO"); }
+    virtual Interval<Quaternion> getDomain() const override { throw cRuntimeError("TODO"); }
 
-    virtual double getMin() const { throw cRuntimeError("TODO"); }
-    virtual double getMin(const Interval<Quaternion>& i) const { throw cRuntimeError("TODO"); }
+    virtual bool isFinite() const override { throw cRuntimeError("TODO"); }
+    virtual bool isFinite(const Interval<Quaternion>& i) const override { throw cRuntimeError("TODO"); }
 
-    virtual double getMax() const { throw cRuntimeError("TODO"); }
-    virtual double getMax(const Interval<Quaternion>& i) const { throw cRuntimeError("TODO"); }
+    virtual double getMin() const override { throw cRuntimeError("TODO"); }
+    virtual double getMin(const Interval<Quaternion>& i) const override { throw cRuntimeError("TODO"); }
 
-    virtual double getMean() const { throw cRuntimeError("TODO"); }
-    virtual double getMean(const Interval<Quaternion>& i) const { throw cRuntimeError("TODO"); }
+    virtual double getMax() const override { throw cRuntimeError("TODO"); }
+    virtual double getMax(const Interval<Quaternion>& i) const override { throw cRuntimeError("TODO"); }
 
-    virtual double getIntegral() const { throw cRuntimeError("TODO"); }
-    virtual double getIntegral(const Interval<Quaternion>& i) const { throw cRuntimeError("TODO"); }
+    virtual double getMean() const override { throw cRuntimeError("TODO"); }
+    virtual double getMean(const Interval<Quaternion>& i) const override { throw cRuntimeError("TODO"); }
+
+    virtual double getIntegral() const override { throw cRuntimeError("TODO"); }
+    virtual double getIntegral(const Interval<Quaternion>& i) const override { throw cRuntimeError("TODO"); }
 
     virtual const Ptr<const IFunction<double, Domain<Quaternion>>> add(const Ptr<const IFunction<double, Domain<Quaternion>>>& o) const override { throw cRuntimeError("TODO"); }
     virtual const Ptr<const IFunction<double, Domain<Quaternion>>> subtract(const Ptr<const IFunction<double, Domain<Quaternion>>>& o) const override { throw cRuntimeError("TODO"); }

@@ -61,13 +61,13 @@ struct bits_to_indices_sequence<0b01, 2> { typedef integer_sequence<size_t, 1> t
 template<>
 struct bits_to_indices_sequence<0b10, 2> { typedef integer_sequence<size_t, 0> type; };
 
+template<int DIMS, int SIZE>
+using make_bits_to_indices_sequence = typename bits_to_indices_sequence<DIMS, SIZE>::type;
+
 template<typename S, size_t ... SIS, typename D, size_t ... DIS>
 void copyTupleElements(const S& source, integer_sequence<size_t, SIS ...>, D& destination, integer_sequence<size_t, DIS ...>) {
     std::initializer_list<double>({ toDouble(std::get<DIS>(destination) = std::get<SIS>(source)) ... });
 }
-
-template<int DIMS, int SIZE>
-using make_bits_to_indices_sequence = typename bits_to_indices_sequence<DIMS, SIZE>::type;
 
 }
 

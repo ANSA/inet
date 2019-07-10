@@ -76,6 +76,16 @@ class INET_API IFunction :
     virtual void partition(const typename D::I& i, const std::function<void (const typename D::I&, const IFunction<R, D> *)> f) const = 0;
 
     /**
+     * Returns true if the function value is finite in the whole domain.
+     */
+    virtual bool isFinite() const = 0;
+
+    /**
+     * Returns true if the function value is finite in the given domain.
+     */
+    virtual bool isFinite(const typename D::I& i) const = 0;
+
+    /**
      * Returns the minimum value for the whole domain.
      */
     virtual R getMin() const = 0;

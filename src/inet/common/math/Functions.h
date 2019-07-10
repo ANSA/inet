@@ -56,6 +56,15 @@ class INET_API FunctionBase : public IFunction<R, D>
         return typename D::I(D::P::getLowerBoundaries(), D::P::getUpperBoundaries());
     }
 
+    virtual bool isFinite() const override { return isFinite(getDomain()); }
+    virtual bool isFinite(const typename D::I& i) const override {
+        bool result = true;
+        this->partition(i, [&] (const typename D::I& i1, const IFunction<R, D> *f) {
+            result &= f->isFinite(i1);
+        });
+        return result;
+    }
+
     virtual R getMin() const override { return getMin(getDomain()); }
     virtual R getMin(const typename D::I& i) const override {
         R result(getUpperBoundary<R>());
@@ -157,6 +166,7 @@ class INET_API ConstantFunction : public FunctionBase<R, D>
         f(i, this);
     }
 
+    virtual bool isFinite(const typename D::I& i) const override { return std::isfinite(toDouble(r)); }
     virtual R getMin(const typename D::I& i) const override { return r; }
     virtual R getMax(const typename D::I& i) const override { return r; }
     virtual R getMean(const typename D::I& i) const override { return r; }
@@ -199,6 +209,8 @@ class INET_API OneDimensionalBoxcarFunction : public FunctionBase<R, Domain<X>>
             f(i3, &g);
         }
     }
+
+    virtual bool isFinite(const Interval<X>& i) const override { return std::isfinite(toDouble(r)); }
 };
 
 template<typename R, typename X, typename Y>
@@ -243,6 +255,8 @@ class INET_API TwoDimensionalBoxcarFunction : public FunctionBase<R, Domain<X, Y
         callf(i.intersect(Interval<X, Y>(Point<X, Y>(X(lowerX), Y(upperY)), Point<X, Y>(X(upperX), getUpperBoundary<Y>()))), f, R(0));
         callf(i.intersect(Interval<X, Y>(Point<X, Y>(X(upperX), Y(upperY)), Point<X, Y>(getUpperBoundary<X>(), getUpperBoundary<Y>()))), f, R(0));
     }
+
+    virtual bool isFinite(const Interval<X, Y>& i) const override { return std::isfinite(toDouble(r)); }
 };
 
 template<typename R, typename D>
@@ -643,6 +657,10 @@ class INET_API AdditionFunction : public FunctionBase<R, D>
             });
         });
     }
+
+    virtual bool isFinite(const typename D::I& i) const override {
+        return f1->isFinite(i) & f2->isFinite(i);
+    }
 };
 
 template<typename R, typename D>
@@ -695,6 +713,10 @@ class INET_API SubtractionFunction : public FunctionBase<R, D>
             });
         });
     }
+
+    virtual bool isFinite(const typename D::I& i) const override {
+        return f1->isFinite(i) & f2->isFinite(i);
+    }
 };
 
 template<typename R, typename D>
@@ -713,6 +735,12 @@ class INET_API MultiplicationFunction : public FunctionBase<R, D>
 
     virtual void partition(const typename D::I& i, const std::function<void (const typename D::I&, const IFunction<R, D> *)> f) const override {
         f1->partition(i, [&] (const typename D::I& i1, const IFunction<R, D> *if1) {
+            if (auto cif1 = dynamic_cast<const ConstantFunction<R, D> *>(if1)) {
+                if (toDouble(cif1->getConstantValue()) == 0 && f2->isFinite(i1)) {
+                    f(i1, if1);
+                    return;
+                }
+            }
             f2->partition(i1, [&] (const typename D::I& i2, const IFunction<double, D> *if2) {
                 if (auto cif1 = dynamic_cast<const ConstantFunction<R, D> *>(if1)) {
                     if (auto cif2 = dynamic_cast<const ConstantFunction<double, D> *>(if2)) {
@@ -742,6 +770,10 @@ class INET_API MultiplicationFunction : public FunctionBase<R, D>
                     throw cRuntimeError("TODO");
             });
         });
+    }
+
+    virtual bool isFinite(const typename D::I& i) const override {
+        return f1->isFinite(i) & f2->isFinite(i);
     }
 };
 
@@ -866,6 +898,13 @@ class INET_API SumFunction : public FunctionBase<R, D>
                     throw cRuntimeError("TODO");
             });
         }
+    }
+
+    virtual bool isFinite(const typename D::I& i) const override {
+        for (auto f : fs)
+            if (!f->isFinite(i))
+                return false;
+        return true;
     }
 };
 
