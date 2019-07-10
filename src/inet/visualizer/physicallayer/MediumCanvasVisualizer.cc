@@ -201,15 +201,15 @@ void MediumCanvasVisualizer::refreshSpectrumFigure(const cModule *module, PlotFi
                             gain = antenna->getGain()->computeGain(antennaLocalDirection);
                         }
                     }
-                    auto receptionPower = gain * f->getMax(Interval<m, m, m, simtime_t, Hz>(pLower, pUpper));
+                    auto receptionPower = gain * f->getMax(Interval<m, m, m, simtime_t, Hz>(pLower, pUpper, 0b11100));
                     if (rf == receptionPowerFunction)
                         signalPower = receptionPower;
                     totalPower += receptionPower;
                 }
             }
             else {
-                totalPower = mediumPowerFunction->getMax(Interval<m, m, m, simtime_t, Hz>(pLower, pUpper));
-                signalPower = receptionPowerFunction != nullptr ? receptionPowerFunction->getMax(Interval<m, m, m, simtime_t, Hz>(pLower, pUpper)) : WpHz(0);
+                totalPower = mediumPowerFunction->getMax(Interval<m, m, m, simtime_t, Hz>(pLower, pUpper, 0b11100));
+                signalPower = receptionPowerFunction != nullptr ? receptionPowerFunction->getMax(Interval<m, m, m, simtime_t, Hz>(pLower, pUpper, 0b11100)) : WpHz(0);
             }
             if (transmission == nullptr)
                 figure->setValue(0, GHz(frequency).get(), wpHz2dBmWpMHz(WpHz(totalPower).get()));
@@ -220,7 +220,7 @@ void MediumCanvasVisualizer::refreshSpectrumFigure(const cModule *module, PlotFi
         }
         Point<m, m, m, simtime_t, Hz> lower(m(position.x), m(position.y), m(position.z), startTime, spectrumMinFrequency);
         Point<m, m, m, simtime_t, Hz> upper(m(position.x), m(position.y), m(position.z), endTime, spectrumMaxFrequency);
-        Interval<m, m, m, simtime_t, Hz> interval(lower, upper);
+        Interval<m, m, m, simtime_t, Hz> interval(lower, upper, 0b11100);
         if (spectrumAutoPowerAxis) {
             mediumPowerFunction->partition(interval, [&] (const Interval<m, m, m, simtime_t, Hz>& i, const IFunction<WpHz, Domain<m, m, m, simtime_t, Hz>> *f) {
                 WpHz minPower = f->getMin(i);

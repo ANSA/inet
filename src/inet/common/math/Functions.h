@@ -342,13 +342,11 @@ class INET_API OneDimensionalInterpolatedFunction : public FunctionBase<R, Domai
         auto ut = rs.upper_bound(std::get<0>(i.getUpper()));
         if (lt->first > std::get<0>(i.getLower()))
             lt--;
-        auto it = lt;
-        while (true) {
-            if (it == ut) break;
+        if (ut == rs.end())
+            ut--;
+        for (auto it = lt; it != ut; it++) {
             auto jt = it;
             jt++;
-            if (jt == ut) break;
-
             auto i1 = i.intersect(Interval<X>(Point<X>(it->first), Point<X>(jt->first)));
             if (!i1.isEmpty()) {
                 const auto interpolator = it->second.second;
@@ -371,8 +369,6 @@ class INET_API OneDimensionalInterpolatedFunction : public FunctionBase<R, Domai
                 else
                     throw cRuntimeError("TODO");
             }
-
-            it++;
         }
     }
 };
