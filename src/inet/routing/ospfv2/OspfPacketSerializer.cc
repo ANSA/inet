@@ -484,6 +484,7 @@ void OspfPacketSerializer::deserializeAsExternalLsa(MemoryInputStream& stream, c
         extTos->externalRouteTag = stream.readUint32Be();
         contents.setExternalTOSInfo(i, *extTos);
     }
+}
 
 void OspfPacketSerializer::serializeLsa(MemoryOutputStream& stream, const OspfLsa& lsa)
 {
