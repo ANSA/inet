@@ -86,6 +86,11 @@ class INET_API Point : public std::tuple<T ...>
     }
 
     template<size_t ... IS>
+    void setImpl(int index, double value, integer_sequence<size_t, IS...>) {
+        std::initializer_list<double>({ (IS == index ? toDouble(std::get<IS>(*this) = T(value)) : 0) ... });
+    }
+
+    template<size_t ... IS>
     Point<T ...> add(const Point<T ...>& o, integer_sequence<size_t, IS ...>) const {
         return Point<T ...>{ (std::get<IS>(*this) + std::get<IS>(o)) ... };
     }
@@ -124,6 +129,10 @@ class INET_API Point : public std::tuple<T ...>
 
     double get(int index) const {
         return getImpl(index, index_sequence_for<T ...>{});
+    }
+
+    void set(int index, double value) {
+        return setImpl(index, value, index_sequence_for<T ...>{});
     }
 
     Point<T ...> operator+(const Point<T ...>& o) const {

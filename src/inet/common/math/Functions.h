@@ -310,18 +310,87 @@ class INET_API LinearInterpolatedFunction : public FunctionBase<R, D>
     }
 };
 
-//template<typename R, typename D>
-//class INET_API BilinearInterpolatedFunction : public FunctionBase<R, D>
-//{
-//  public:
-//    virtual R getValue(const typename D::P& p) const override {
-//        throw cRuntimeError("TODO");
-//    }
-//
-//    virtual void partition(const typename D::I& i, const std::function<void (const typename D::I&, const IFunction<R, D> *)> f) const override {
-//        throw cRuntimeError("TODO");
-//    }
-//};
+template<typename R, typename D>
+class INET_API BilinearInterpolatedFunction : public FunctionBase<R, D>
+{
+  protected:
+    const typename D::P lowerLower; // value is ignored in all but two dimensions
+    const typename D::P lowerUpper; // value is ignored in all but two dimensions
+    const typename D::P upperLower; // value is ignored in all but two dimensions
+    const typename D::P upperUpper; // value is ignored in all but two dimensions
+    const R rLowerLower;
+    const R rLowerUpper;
+    const R rUpperLower;
+    const R rUpperUpper;
+    const int dimension1;
+    const int dimension2;
+
+  protected:
+    typename D::I getOtherInterval(const typename D::I& i) const {
+        const typename D::P& lower = i.getLower();
+        const typename D::P& upper = i.getUpper();
+        typename D::P lowerUpper = D::P::getZero();
+        typename D::P upperLower = D::P::getZero();
+        lowerUpper.set(dimension1, lower.get(dimension1));
+        lowerUpper.set(dimension2, upper.get(dimension2));
+        upperLower.set(dimension1, upper.get(dimension1));
+        upperLower.set(dimension2, lower.get(dimension2));
+        return typename D::I(lowerUpper, upperLower);
+    }
+
+  public:
+    BilinearInterpolatedFunction(const typename D::P& lowerLower, const typename D::P& lowerUpper, const typename D::P& upperLower, const typename D::P& upperUpper,
+                                 const R rLowerLower, const R rLowerUpper, const R rUpperLower, const R rUpperUpper, const int dimension1, const int dimension2) :
+        lowerLower(lowerLower), lowerUpper(lowerUpper), upperLower(upperLower), upperUpper(upperUpper),
+        rLowerLower(rLowerLower), rLowerUpper(rLowerUpper), rUpperLower(rUpperLower), rUpperUpper(rUpperUpper),
+        dimension1(dimension1), dimension2(dimension2) { }
+
+    virtual const typename D::P& getLowerLower() const { return lowerLower; }
+    virtual const typename D::P& getLowerUpper() const { return lowerUpper; }
+    virtual const typename D::P& getUpperLower() const { return upperLower; }
+    virtual const typename D::P& getUpperUpper() const { return upperUpper; }
+    virtual R getRLowerLower() const { return rLowerLower; }
+    virtual R getRLowerUpper() const { return rLowerUpper; }
+    virtual R getRUpperLower() const { return rUpperLower; }
+    virtual R getRUpperUpper() const { return rUpperUpper; }
+    virtual int getDimension1() const { return dimension1; }
+    virtual int getDimension2() const { return dimension2; }
+
+    virtual Interval<R> getRange() const { return Interval<R>(std::min(std::min(rLowerLower, rLowerUpper), std::min(rUpperLower, rUpperUpper)),
+                                                              std::max(std::max(rLowerLower, rLowerUpper), std::max(rUpperLower, rUpperUpper))); }
+    virtual typename D::I getDomain() const { throw cRuntimeError("TODO"); };
+
+    virtual R getValue(const typename D::P& p) const override {
+        double lowerAlpha = (p - lowerLower).get(dimension1) / (upperLower - lowerLower).get(dimension1);
+        R rLower = rLowerLower * (1 - lowerAlpha) + rUpperLower * lowerAlpha;
+        const typename D::P lower = lowerLower * (1 - lowerAlpha) + upperLower * lowerAlpha;
+
+        double upperAlpha = (p - lowerUpper).get(dimension1) / (upperUpper - lowerUpper).get(dimension1);
+        R rUpper = rLowerUpper * (1 - upperAlpha) + rUpperUpper * upperAlpha;
+        const typename D::P upper = lowerUpper * (1 - upperAlpha) + upperUpper * upperAlpha;
+
+        double alpha = (p - lower).get(dimension2) / (upper - lower).get(dimension2);
+        return rLower * (1 - alpha) + rUpper * alpha;
+    }
+
+    virtual void partition(const typename D::I& i, const std::function<void (const typename D::I&, const IFunction<R, D> *)> f) const override {
+        f(i, this);
+    }
+
+    virtual R getMin(const typename D::I& i) const override {
+        auto j = getOtherInterval(i);
+        return std::min(std::min(getValue(i.getLower()), getValue(j.getLower())), std::min(getValue(j.getUpper()), getValue(i.getUpper())));
+    }
+
+    virtual R getMax(const typename D::I& i) const override {
+        auto j = getOtherInterval(i);
+        return std::max(std::max(getValue(i.getLower()), getValue(j.getLower())), std::max(getValue(j.getUpper()), getValue(i.getUpper())));
+    }
+
+    virtual R getMean(const typename D::I& i) const override {
+        return getValue((i.getLower() + i.getUpper()) / 2);
+    }
+};
 
 template<typename R, typename X>
 class INET_API OneDimensionalInterpolatedFunction : public FunctionBase<R, Domain<X>>
@@ -497,7 +566,7 @@ class INET_API OrthogonalCombinatorFunction : public FunctionBase<R, Domain<X, Y
                         simplifyAndCall(Interval<X, Y>(lower, upper, closed), &g, h);
                     }
                     else {
-                        // QuadraticFunction<double, Domain<X, Y>> g(); // TODO:
+                        // QuadraticFunction<double, Domain<X, Y>> g();
                         throw cRuntimeError("TODO");
                     }
                 }
@@ -612,6 +681,56 @@ class INET_API ReciprocalFunction : public FunctionBase<R, D>
     }
 };
 
+//template<typename R, typename D>
+//class INET_API BireciprocalFunction : public FunctionBase<R, D>
+//{
+//  protected:
+//    // f(x, y) = (a0 + a1 * x + a2 * y + a3 * x * y) / (b0 + b1 * x + b2 * y + b3 * x * y)
+//    const double a0;
+//    const double a1;
+//    const double a2;
+//    const double a3;
+//    const double b0;
+//    const double b1;
+//    const double b2;
+//    const double b3;
+//    const int dimension1;
+//    const int dimension2;
+//
+//  protected:
+//    double getIntegral(const typename D::P& p) const {
+//        double x = p.get(dimension1);
+//        double y = p.get(dimension2);
+//        throw cRuntimeError("TODO");
+//    }
+//
+//  public:
+//    BireciprocalFunction(double a0, double a1, double a2, double a3, double b0, double b1, double b2, double b3, int dimension1, int dimension2) :
+//        a0(a0), a1(a1), a2(a2), a3(a3), b0(b0), b1(b1), b2(b2), b3(b3), dimension1(dimension1), dimension2(dimension2) { }
+//
+//    virtual R getValue(const typename D::P& p) const override {
+//        double x = p.get(dimension1);
+//        double y = p.get(dimension2);
+//        return R((a0 + a1 * x + a2 * y + a3 * x * y) / (b0 + b1 * x + b2 * y + b3 * x * y));
+//    }
+//
+//    virtual void partition(const typename D::I& i, const std::function<void (const typename D::I&, const IFunction<R, D> *)> f) const override {
+//        f(i, this);
+//    }
+//
+//    virtual R getMin(const typename D::I& i) const override {
+//        throw cRuntimeError("TODO");
+//    }
+//
+//    virtual R getMax(const typename D::I& i) const override {
+//        throw cRuntimeError("TODO");
+//    }
+//
+//    virtual R getMean(const typename D::I& i) const override {
+//        throw cRuntimeError("TODO");
+//    }
+//};
+
 template<typename R, typename D>
 class INET_API AdditionFunction : public FunctionBase<R, D>
 {
@@ -652,8 +771,26 @@ class INET_API AdditionFunction : public FunctionBase<R, D>
                             LinearInterpolatedFunction<R, D> g(i2.getLower(), i2.getUpper(), lif1->getValue(i2.getLower()) + lif2->getValue(i2.getLower()), lif1->getValue(i2.getUpper()) + lif2->getValue(i2.getUpper()), lif1->getDimension());
                             simplifyAndCall(i2, &g, f);
                         }
-                        else
-                            throw cRuntimeError("TODO");
+                        else {
+                            typename D::P lowerLower = D::P::getZero();
+                            typename D::P lowerUpper = D::P::getZero();
+                            typename D::P upperLower = D::P::getZero();
+                            typename D::P upperUpper = D::P::getZero();
+                            lowerLower.set(lif1->getDimension(), i1.getLower().get(lif1->getDimension()));
+                            lowerUpper.set(lif1->getDimension(), i1.getLower().get(lif1->getDimension()));
+                            upperLower.set(lif1->getDimension(), i1.getUpper().get(lif1->getDimension()));
+                            upperUpper.set(lif1->getDimension(), i1.getUpper().get(lif1->getDimension()));
+                            lowerLower.set(lif2->getDimension(), i2.getLower().get(lif2->getDimension()));
+                            lowerUpper.set(lif2->getDimension(), i2.getUpper().get(lif2->getDimension()));
+                            upperLower.set(lif2->getDimension(), i2.getLower().get(lif2->getDimension()));
+                            upperUpper.set(lif2->getDimension(), i2.getUpper().get(lif2->getDimension()));
+                            R rLowerLower = lif1->getValue(lowerLower) + lif2->getValue(lowerLower);
+                            R rLowerUpper = lif1->getValue(lowerUpper) + lif2->getValue(lowerUpper);
+                            R rUpperLower = lif1->getValue(upperLower) + lif2->getValue(upperLower);
+                            R rUpperUpper = lif1->getValue(upperUpper) + lif2->getValue(upperUpper);
+                            BilinearInterpolatedFunction<R, D> g(lowerLower, lowerUpper, upperLower, upperUpper, rLowerLower, rLowerUpper, rUpperLower, rUpperUpper, lif1->getDimension(), lif2->getDimension());
+                            simplifyAndCall(i2, &g, f);
+                        }
                     }
                     else
                         throw cRuntimeError("TODO");
@@ -767,7 +904,7 @@ class INET_API MultiplicationFunction : public FunctionBase<R, D>
                         simplifyAndCall(i2, &g, f);
                     }
                     else if (auto lif2 = dynamic_cast<const LinearInterpolatedFunction<double, D> *>(if2)) {
-                        // QuadraticFunction<double, D> g(); // TODO:
+                        // QuadraticFunction<double, D> g();
                         throw cRuntimeError("TODO");
                     }
                     else
@@ -823,8 +960,11 @@ class INET_API DivisionFunction : public FunctionBase<double, D>
                             ReciprocalFunction<double, D> g(lif1->getA(), lif1->getB(), lif2->getA(), lif2->getB(), lif2->getDimension());
                             simplifyAndCall(i2, &g, f);
                         }
-                        else
+                        else {
                             throw cRuntimeError("TODO");
+                            // BireciprocalFunction<double, D> g(...);
+                            // simplifyAndCall(i2, &g, f);
+                        }
                     }
                     else
                         throw cRuntimeError("TODO");
@@ -1022,6 +1162,7 @@ class INET_API MemoizedFunction : public FunctionBase<R, D>
     MemoizedFunction(const Ptr<const IFunction<R, D>>& f) : f(f) {
         f->partition(f->getDomain(), [] (const typename D::I& i, const IFunction<R, D> *g) {
             // TODO: store all interval function pairs in a domain subdivision tree structure
+            throw cRuntimeError("TODO");
         });
     }
 
@@ -1036,6 +1177,11 @@ class INET_API MemoizedFunction : public FunctionBase<R, D>
 };
 
 template<typename R, typename D>
+void simplifyAndCall(const typename D::I& i, const IFunction<R, D> *f, const std::function<void (const typename D::I&, const IFunction<R, D> *)> g) {
+    g(i, f);
+}
+
+template<typename R, typename D>
 void simplifyAndCall(const typename D::I& i, const LinearInterpolatedFunction<R, D> *f, const std::function<void (const typename D::I&, const IFunction<R, D> *)> g) {
     if (f->getRLower() == f->getRUpper()) {
         ConstantFunction<R, D> h(f->getRLower());
@@ -1046,8 +1192,14 @@ void simplifyAndCall(const typename D::I& i, const LinearInterpolatedFunction<R,
 }
 
 template<typename R, typename D>
-void simplifyAndCall(const typename D::I& i, const IFunction<R, D> *f, const std::function<void (const typename D::I&, const IFunction<R, D> *)> g) {
-    g(i, f);
+void simplifyAndCall(const typename D::I& i, const BilinearInterpolatedFunction<R, D> *f, const std::function<void (const typename D::I&, const IFunction<R, D> *)> g) {
+    if (f->getRLowerLower() == f->getRLowerUpper() && f->getRLowerLower() == f->getRUpperLower() && f->getRLowerLower() == f->getRUpperUpper()) {
+        ConstantFunction<R, D> h(f->getRLowerLower());
+        g(i, &h);
+    }
+    // TODO: one dimensional linear functions?
+    else
+        g(i, f);
 }
 
 } // namespace math

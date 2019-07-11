@@ -31,7 +31,8 @@
  - refactor spectrum visualization to use one partition call and to calculate min&max of signal/interference and pixel positions in the callback (this is more efficient than how it currently is)
  - add separate propagation mathematical function which can optimize away partitioning signals which have not arrived yet or already left the spacetime coordinates
  - optimize reception power function quantization: currently quantization is based on the bandwidth, but when a wide and a narrowband signal interferes this leads to too many sampling point in the narrowband signal for the whole spectrum
-
+ - refactor and optimize for bandpassFilter * signalPower * memoize(approximate(attenuation))
+ - min(packet), mean(packet), min(mean(symbol))
 
 
 
