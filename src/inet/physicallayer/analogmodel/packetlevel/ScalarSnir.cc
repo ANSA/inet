@@ -55,7 +55,8 @@ double ScalarSnir::computeMax() const
 
 double ScalarSnir::computeMean() const
 {
-    throw cRuntimeError("TODO");
+    // TODO:
+    return NaN;
 }
 
 double ScalarSnir::getMin() const
