@@ -293,6 +293,10 @@ class INET_API LinearInterpolatedFunction : public FunctionBase<R, D>
         f(i, this);
     }
 
+    virtual bool isFinite(const typename D::I& i) const override {
+        return std::isfinite(toDouble(rLower)) && std::isfinite(toDouble(rUpper));
+    }
+
     virtual R getMin(const typename D::I& i) const override {
         return std::min(getValue(i.getLower()), getValue(i.getUpper()));
     }
@@ -385,6 +389,8 @@ class INET_API OneDimensionalInterpolatedFunction : public FunctionBase<R, Domai
             }
         }
     }
+
+    virtual bool isFinite(const Interval<X>& i) const override { return true; }
 };
 
 //template<typename R, typename X, typename Y>
@@ -735,6 +741,7 @@ class INET_API MultiplicationFunction : public FunctionBase<R, D>
 
     virtual void partition(const typename D::I& i, const std::function<void (const typename D::I&, const IFunction<R, D> *)> f) const override {
         f1->partition(i, [&] (const typename D::I& i1, const IFunction<R, D> *if1) {
+            // NOTE: optimization for 0 * x
             if (auto cif1 = dynamic_cast<const ConstantFunction<R, D> *>(if1)) {
                 if (toDouble(cif1->getConstantValue()) == 0 && f2->isFinite(i1)) {
                     f(i1, if1);
@@ -827,6 +834,8 @@ class INET_API DivisionFunction : public FunctionBase<double, D>
             });
         });
     }
+
+    virtual bool isFinite(const typename D::I& i) const override { return false; }
 };
 
 template<typename R, typename D>

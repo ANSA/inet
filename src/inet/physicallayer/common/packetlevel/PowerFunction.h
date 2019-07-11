@@ -229,19 +229,14 @@ class INET_API AntennaGainFunction : public IFunction<double, Domain<Quaternion>
   public:
     AntennaGainFunction(const IAntennaGain *antennaGain) : antennaGain(antennaGain) { }
 
+    virtual Interval<double> getRange() const override { throw cRuntimeError("TODO"); }
+    virtual Interval<Quaternion> getDomain() const override { throw cRuntimeError("TODO"); }
+
     virtual double getValue(const Point<Quaternion>& p) const override {
         return antennaGain->computeGain(std::get<0>(p));
     }
 
-    virtual void partition(const Interval<Quaternion>& i, const std::function<void (const Interval<Quaternion>&, const IFunction<double, Domain<Quaternion>> *)> f) const override {
-        throw cRuntimeError("TODO");
-    }
-
-    template<int DIMS, typename RI, typename DI>
-    Ptr<const IFunction<RI, DI>> integrate() const { throw cRuntimeError("TODO"); }
-
-    virtual Interval<double> getRange() const override { throw cRuntimeError("TODO"); }
-    virtual Interval<Quaternion> getDomain() const override { throw cRuntimeError("TODO"); }
+    virtual void partition(const Interval<Quaternion>& i, const std::function<void (const Interval<Quaternion>&, const IFunction<double, Domain<Quaternion>> *)> f) const override { throw cRuntimeError("TODO"); }
 
     virtual bool isFinite() const override { throw cRuntimeError("TODO"); }
     virtual bool isFinite(const Interval<Quaternion>& i) const override { throw cRuntimeError("TODO"); }

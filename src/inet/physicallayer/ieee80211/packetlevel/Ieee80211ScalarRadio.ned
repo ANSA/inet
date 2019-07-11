@@ -27,7 +27,7 @@ package inet.physicallayer.ieee80211.packetlevel;
 module Ieee80211ScalarRadio extends Ieee80211Radio
 {
     parameters:
-        transmitter.typename = default("Ieee80211ScalarTransmitter");
-        receiver.typename = default("Ieee80211ScalarReceiver");
+        transmitter.typename = default("Ieee80211DimensionalTransmitter");
+        receiver.typename = default("Ieee80211DimensionalReceiver");
 }
 
