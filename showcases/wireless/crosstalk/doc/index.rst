@@ -66,7 +66,7 @@ transmissions are exactly identical. Partially overlapping signals cause
 an error, but completely non-overlapping signals are allowed by the
 scalar model.
 
-.. figure:: scalar.png
+.. figure:: media/scalar.png
    :width: 60%
    :align: center
 
@@ -78,7 +78,7 @@ interference even in the case of signals that partially overlap in
 frequency and bandwidth. However, dimensional analog models require more
 processing power.
 
-.. figure:: dimensional.png
+.. figure:: media/dimensional.png
    :width: 60%
    :align: center
 
@@ -110,7 +110,7 @@ There are example simulations for the three cases outlined in the Goals
 section. All simulations use variations of the same network, which is
 illustrated by the image below:
 
-.. figure:: basenetwork.png
+.. figure:: media/basenetwork.png
    :width: 80%
    :align: center
 
@@ -147,7 +147,7 @@ The following video shows the node-pairs communicating, the number of
 sent/received packets is displayed above the nodes, as well as the state
 of the contention modules of the transmitting hosts.
 
-.. video:: overlapping1.mp4
+.. video:: media/overlapping1.mp4
   :width: 90%
   :align: center
 
@@ -179,7 +179,7 @@ from the ini file. The radios of the two host pairs are set to use non-overlappi
 
 The video below shows the hosts communicating:
 
-.. video:: independent2.mp4
+.. video:: media/independent2.mp4
   :width: 90%
   :align: center
 
@@ -222,7 +222,7 @@ as the use of two radio modules prevents interference anyway.)
 The following video shows the
 host-pairs communicating:
 
-.. video:: independent_2radiomediums1.mp4
+.. video:: media/independent_2radiomediums1.mp4
   :width: 90%
   :align: center
 
@@ -251,7 +251,7 @@ The host pairs are set to adjacent Wifi channels 1 and 2.
 
 The following video shows the host pairs communicating:
 
-.. video:: partial2.mp4
+.. video:: media/partial2.mp4
    :width: 90%
    :align: center
 
@@ -260,7 +260,7 @@ The following video shows the host pairs communicating:
 Here is an excerpt from the log, showing a transmission of ``host1`` and ``host3``,
 as being received by ``host2`` and ``host4``. The two transmissions have a different center frequency:
 
-.. figure:: adjacent.png
+.. figure:: media/adjacent.png
    :width: 100%
 
 Even though they are on different channels, the transmissions interfere.

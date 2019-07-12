@@ -62,7 +62,7 @@ layout of the two applications can be seen in the following image:
 +----------------------------------------------+--+---------------------------------------------+
 |        Voip Stream Sender Application        |  |      Voip Stream Receiver Application       |
 +==============================================+==+=============================================+
-|.. image:: VoipStreamSenderApplication.png    |  |.. image:: VoipStreamReceiverApplication.png |
+|.. image:: media/VoipStreamSenderApplication.png    |  |.. image:: media/VoipStreamReceiverApplication.png |
 |   :width: 100%                               |  |   :width: 100%                              |
 |   :align: center                             |  |   :align: center                            |
 +----------------------------------------------+--+---------------------------------------------+
@@ -148,7 +148,7 @@ the play button below:
 
 .. raw:: html
 
-   <p><audio controls> <source src="original.mp3" type="audio/mpeg">Your browser does not support the audio tag.</audio></p>
+   <p><audio controls> <source src="media/original.mp3" type="audio/mpeg">Your browser does not support the audio tag.</audio></p>
 
 This music is then sampled and forwarded by the ``VoipStreamSender``
 module and received by the ``VoipStreamReceiver`` module. The packets
@@ -165,7 +165,7 @@ nearly as good as of the original file:
 
 .. raw:: html
 
-   <p><audio controls> <source src="sound.wav" type="audio/wav">Your browser does not support the audio tag.</audio></p>
+   <p><audio controls> <source src="media/sound.wav" type="audio/wav">Your browser does not support the audio tag.</audio></p>
 
 It is stated above that the two simulations run separately on the same
 device using the computer's loopback interface. To provide some evidence
@@ -174,7 +174,7 @@ rate of the interfaces of the computer. The following video shows how
 the traffic rate of the loopback interface (named ``lo``) changes while
 the simulation is running:
 
-.. video:: loopback.mp4
+.. video:: media/loopback.mp4
    :width: 100%
 |
 

@@ -38,11 +38,11 @@ The example simulation features a Wifi (802.11) and a WPAN (802.15.4) network cl
 for the two wireless protocols have different center frequencies and bandwidths,
 but the signal spectrums can overlap. In this showcase, we will configure the two networks to actually use overlapping channels. The channel spectrums for both technologies are shown on the following image:
 
-.. figure:: channels/channels.png
+.. figure:: media/channels/channels.png
    :width: 100%
    :align: center
 
-.. .. figure:: channels/channels2.png
+.. .. figure:: media/channels/channels2.png
       :width: 100%
       :align: center
 
@@ -50,7 +50,7 @@ but the signal spectrums can overlap. In this showcase, we will configure the tw
 
 For the WPAN, we'll use INET's 802.15.4 narrowband version, in which transmissions have a 2450 MHz carrier frequency and a 2.8 MHz bandwidth by default. For the Wifi, we'll use 802.11g, in which transmissions have a 20 MHz bandwidth. We'll leave the frequency and bandwidth of 802.15.4 on default, and we'll use Wifi Channel 9 (center frequency of 2452 MHz) so that the Wifi and WPAN transmission spectrums overlap:
 
-.. figure:: channels/channels8.png
+.. figure:: media/channels/channels8.png
    :width: 30%
    :align: center
 
@@ -132,7 +132,7 @@ The SIFS and ack together are also about ten times longer in 802.15.4. The relat
 the Wifi and the WPAN is illustrated with the sequence chart below. The chart shows a packet
 transmission and ACK, first for the Wifi and then for the WPAN. The scale is linear.
 
-.. figure:: seqchart.png
+.. figure:: media/seqchart.png
    :width: 100%
    :align: center
 
@@ -166,7 +166,7 @@ Configuration
 
 The simulation uses the ``CoexistenceShowcase`` network, defined in :download:`CoexistenceShowcase.ned <../CoexistenceShowcase.ned>`:
 
-.. figure:: network2.png
+.. figure:: media/network2.png
    :width: 100%
    :align: center
 
@@ -194,7 +194,14 @@ with a power of -110 dBm. Here is the radio medium configuration in :download:`o
 .. **TODO: wifi channel number offset**
 
 The Wifi hosts are configured to have :ned:`Ieee80211DimensionalRadio`. The default signal shape
-is not changed in the transmitter, so the radio uses a flat signal in time and frequency.
+in time is not changed in the transmitter, so the radio uses a flat signal in time.
+In frequency, instead of the default flat signal, we configure a more realistic shape.
+
+**TODO**
+
+- about how to specify the psu
+- what shapes we're using
+
 The Wifi channel is set to Channel 9 (center frequency of 2452MHz) to ensure that the Wifi transmissions overlap with the 802.15.4 transmissions in frequency. Here is the configuration for the Wifi host radios in
 :download:`omnetpp.ini <../omnetpp.ini>`:
 
@@ -334,7 +341,7 @@ It looks like the following when the simulation is run:
 
 .. TODO when running the coexistence configuration it looks like the following...
 
-.. video:: coexistence1.mp4
+.. video:: media/coexistence1.mp4
    :width: 90%
    :align: center
 
@@ -386,11 +393,11 @@ and see how their performances change when both of them communicate concurrently
 
 Here are the performance results:
 
-.. figure:: wifiperformance.png
+.. figure:: media/wifiperformance.png
    :width: 70%
    :align: center
 
-.. figure:: wpanperformance.png
+.. figure:: media/wpanperformance.png
    :width: 70%
    :align: center
 
@@ -450,13 +457,13 @@ the averaging of the repetitions.
    Here are the results for the WPAN, the optimal performance ``aUnitBackoffPeriod``
    value is indicated with an arrow:
 
-   .. figure:: wpan_study.png
+   .. figure:: media/wpan_study.png
       :width: 100%
 
    The results for the Wifi is shown on the following bar chart.
    The minimum and maximum number of packets are indicated with arrows:
 
-   .. figure:: wifi_study.png
+   .. figure:: media/wifi_study.png
       :width: 100%
 
    .. Both technologies perform about 10 percent slower when they share the channel.
@@ -470,11 +477,11 @@ the averaging of the repetitions.
    The following bar charts show the number of received packets, updated with the results for the
    tweaked parameters:
 
-   .. figure:: wifiperformance_updated.png
+   .. figure:: media/wifiperformance_updated.png
       :width: 80%
       :align: center
 
-   .. figure:: wpanperformance_updated.png
+   .. figure:: media/wpanperformance_updated.png
       :width: 80%
       :align: center
 
@@ -486,10 +493,10 @@ the averaging of the repetitions.
    the two technologies is illustrated with the sequence chart below. The chart shows a packet
    transmission and ACK, for Wifi and WPAN, respectively. The scale is linear.
 
-   .. figure:: seqchart.png
+   .. figure:: media/seqchart.png
       :width: 100%
 
-.. figure:: spectrum.png
+.. figure:: media/spectrum.png
    :width: 100%
    :align: center
 
