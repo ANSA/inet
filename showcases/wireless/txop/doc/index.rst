@@ -1,5 +1,3 @@
-:orphan:
-
 IEEE 802.11 Transmit Opportunity
 ================================
 
